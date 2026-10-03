@@ -1,0 +1,31 @@
+# ---- 解析临时缓存（流水线生成物，勿提交）----
+tem_cache/
+
+# ---- 源文档（本地输入的 PDF 语料，勿提交）----
+doc/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+env/
+
+# ---- 环境变量 / 密钥 ----
+.env
+.env.*
+!.env.example
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
