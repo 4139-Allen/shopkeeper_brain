@@ -56,7 +56,7 @@ GRAPH_DEFAULT_STATE: ImportGraphState = {
 
 #===================================================
 # 工具
-def create_default_state(**overrides) -> dict:
+def create_default_state(**overrides) -> ImportGraphState:
     """
     创建默认状态，支持覆盖
     Args:
@@ -64,13 +64,13 @@ def create_default_state(**overrides) -> dict:
     Return:
         新状态实例
     Examples:
-        state = create_default_state(task_id="task_001", local_file_path="doc.pdf")
+        state = create_default_state(task_id="task_001", local_file_path="result_doc.pdf")
     """
-    state = copy.deepcopy(GRAPH_DEFAULT_STATE)  #深拷贝，生成了一个新对象
+    state: ImportGraphState = copy.deepcopy(GRAPH_DEFAULT_STATE)  #深拷贝，生成了一个新对象
     state.update(overrides)
     return state
 
-def get_default_state():
+def get_default_state() -> ImportGraphState:
     """
     获取默认状态副本
     Return:
