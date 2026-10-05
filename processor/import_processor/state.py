@@ -45,7 +45,7 @@ GRAPH_DEFAULT_STATE: ImportGraphState = {
     "is_pdf_read_enabled": False,
     "is_md_read_enabled": False,
     "import_file_path": "",
-    "file_dir": "",
+    "dir_path": "",
     "pdf_path": "",
     "md_path": "",
     "file_title": "",

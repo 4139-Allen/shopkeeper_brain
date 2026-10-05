@@ -9,18 +9,24 @@ from langgraph.constants import START, END
 
 from knowledge.processor.import_processor.base import setup_logging
 from knowledge.processor.import_processor.nodes.entry import EntryNood
+from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
 from knowledge.processor.import_processor.state import ImportGraphState, create_default_state
 from langgraph.graph.state import CompiledStateGraph, StateGraph
 
 
 # 定义入口节点的 条件路由
-def entry_router(state: ImportGraphState):
+def entry_router(state: ImportGraphState) -> str:
     """
     入口节点后的条件路由
     根据文件类型判断是进入pdf转md节点，还是直接进入md处理分支
     :param state: 当前图状态
     :return 下一个节点的名称
     """
+    if state.get("is_pdf_read_enabled"):
+        return "pdf_to_md_node"
+    if state.get("is_md_read_enabled"):
+        return "md_img_node"
+    return END
 
 
 
@@ -56,7 +62,8 @@ def create_import_graph() -> CompiledStateGraph:
 
     # 2.定义节点
     nodes = {
-        "entry_node": EntryNood()
+        "entry_node": EntryNood(),
+        "pdf_to_md_node": PdfToMdNode()
     }
 
     # 2.1添加入口节点
@@ -68,10 +75,19 @@ def create_import_graph() -> CompiledStateGraph:
 
     # 3.定义边
     # 3.1条件边
+    # graph_pipeline.add_conditional_edges(
+    #     "entry_node", entry_router,
+    #     {
+    #         "pdf_to_md_node": "pdf_to_md_node",
+    #         "md_img_node": "md_img_node",
+    #         END: END
+    #     }
+    # )
 
     # 3.2 顺序边
     graph_pipeline.add_edge(START, "entry_node")
-    graph_pipeline.add_edge("entry_node", END)
+    graph_pipeline.add_edge("entry_node", "pdf_to_md_node")
+    graph_pipeline.add_edge("pdf_to_md_node", END)
 
     # 4.编译图
     return graph_pipeline.compile()
@@ -87,18 +103,18 @@ def run_import_graph(import_file_path: str, file_dir: str) -> ImportGraphState |
         :param file_dir:
         :return: 最终状态字典
         """
-    state = {
+    state:ImportGraphState = {
         "import_file_path": import_file_path,
         "file_dir": file_dir
     }
     # ** state 是 Python 的解包操作，将字典展开为关键字参数
     init_state = create_default_state(**state)
-    # 默认返回None
-    final_state = None
 
-    for event in kb_import_graph_app.stream(init_state):
-        for node_name, node_state in event.items():
-            final_state = init_state
+    final_state= kb_import_graph_app.invoke(init_state)
+    return final_state
+    # for event in kb_import_graph_app.stream(state):
+    #     for node_name, node_state in event.items():
+    #         final_state = state
 
     return final_state
 
@@ -107,7 +123,7 @@ if __name__ == "__main__":
     setup_logging()
 
     import_file_path1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\基于STM32智能门禁系统_简洁报告.pdf"
-    file_dir1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\result_doc"
+    file_dir1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
 
     final_state1 = run_import_graph(import_file_path1,file_dir1)
     print(json.dumps(final_state1,indent=4,ensure_ascii=False))

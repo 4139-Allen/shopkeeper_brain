@@ -56,7 +56,7 @@ class EntryNood(BaseNode):
 
 if __name__ == "__main__":
     setup_logging()
-    entry_state:ImportGraphState ={
+    entry_state:ImportGraphState = {
         "import_file_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\基于STM32智能门禁系统_简洁报告.pdf",
         "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\result_doc"
     }

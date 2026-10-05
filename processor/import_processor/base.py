@@ -74,7 +74,7 @@ class BaseNode(ABC):
         """
         log_msg = f"[{step_name}]"
         if message:
-            log_msg += f"{message}"
+            log_msg += f" {message}"
         self.logger.info(log_msg)
 
 #配置日志格式
