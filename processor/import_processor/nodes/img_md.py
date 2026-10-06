@@ -5,6 +5,7 @@ md文档图片处理节点
 """
 import dataclasses
 import re
+from collections import deque
 from pathlib import Path
 
 from openai.resources.beta import beta
@@ -240,6 +241,30 @@ class ImageScanner:
             selected.reverse()
         # 返回这张图片上下文
         return "\n\n".join(selected)
+
+# 3.图片摘要生成
+class VLMSummarizer:
+    """
+    主要职责:
+        根据图片上下文和图片，靠VLM视觉语言模型生成图片摘要
+    """
+    def __init__(self, logger):
+        self.logger = logger
+
+
+    def summarize_all(self,
+                       document_title: str,
+                       image_list: list[ImageInfo],
+                       vl_model: str,
+                       requests_per_minute: int # 每分钟请求次数
+                       ) -> dict[str, str]:     # 返回图片名称 和 图片摘要 字典
+
+        summaries: dict[str, str] = {}
+        requests_timestamps: deque[float] = deque() # 请求时间戳
+
+        try:
+            client = AIClients.get_openai()
+
 
 
 
