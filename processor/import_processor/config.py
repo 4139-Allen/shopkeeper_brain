@@ -38,7 +38,7 @@ class ImportConfig:
     ✅ 支持运行时环境变量变化 ✅ 避免模块加载时序问题 ✅ 保持代码风格一致 ✅ 更符合配置管理的最佳实践
     如果直接赋值，可能会导致环境变量修改后不生效的 bug！
     """
-    # 2.图片扩展名
+    # 2.系统支持的图片扩展名
     image_extensions: set[str] = field(
         default_factory=lambda: {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
     )

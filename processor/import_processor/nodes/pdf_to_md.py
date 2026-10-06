@@ -148,7 +148,7 @@ if __name__ == "__main__":
     setup_logging()
     pdf_to_md_node = PdfToMdNode()
     init_state:ImportGraphState = {
-        "import_file_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\基于STM32智能门禁系统_简洁报告.pdf",
+        "import_file_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用.pdf",
         "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
 
     }

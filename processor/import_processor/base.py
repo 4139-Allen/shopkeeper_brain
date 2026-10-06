@@ -19,7 +19,7 @@ class BaseNode(ABC):
     基类提供 统一的日志、任务追踪和错误处理
     """
 
-    name: str = None  #子类必须赋值
+    name: str = None  #子类赋值
 
     def __init__(self, config: ImportConfig | None = None):
         """
@@ -33,7 +33,7 @@ class BaseNode(ABC):
     def __call__(self, state:ImportGraphState) -> ImportGraphState:
         """
         节点执行入口
-        langgraph 调用节点时会调用此方法，实现类能想方法一样调用
+        langgraph 调用节点时会调用此方法，实现类能像方法一样调用
         附带提供统一的日志输出、任务追踪和异常处理
         Args:
             state: 图状态字典
