@@ -9,11 +9,9 @@ import re
 import time
 from collections import deque
 from pathlib import Path
-
-from ir_datasets.log import format_interval
 from openai import OpenAI
 
-from knowledge.processor.import_processor.base import BaseNode
+from knowledge.processor.import_processor.base import BaseNode, setup_logging
 from knowledge.processor.import_processor.exceptions import StateFieldError, FileProcessingError, ImageProcessingError
 from knowledge.processor.import_processor.state import ImportGraphState
 from knowledge.utils.client.ai_clients import AIClients
@@ -512,7 +510,14 @@ class MarkDownImageNode(BaseNode):
 
         return state
 
-
+#测试
+if __name__ == "__main__":
+    setup_logging()
+    node = MarkDownImageNode()
+    state:ImportGraphState = {
+        "md_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\auto\万用表RS-12的使用.md"
+    }
+    node.process(state)
 
 
 

@@ -9,6 +9,7 @@ from langgraph.constants import START, END
 
 from knowledge.processor.import_processor.base import setup_logging
 from knowledge.processor.import_processor.nodes.entry import EntryNood
+from knowledge.processor.import_processor.nodes.img_md import MarkDownImageNode
 from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
 from knowledge.processor.import_processor.state import ImportGraphState, create_default_state
 from langgraph.graph.state import CompiledStateGraph, StateGraph
@@ -61,9 +62,10 @@ def create_import_graph() -> CompiledStateGraph:
     graph_pipeline = StateGraph(ImportGraphState)
 
     # 2.定义节点
-    nodes = {
+    nodes: dict = {
         "entry_node": EntryNood(),
-        "pdf_to_md_node": PdfToMdNode()
+        "pdf_to_md_node": PdfToMdNode(),
+        "md_img_node": MarkDownImageNode()
     }
 
     # 2.1添加入口节点
@@ -75,19 +77,18 @@ def create_import_graph() -> CompiledStateGraph:
 
     # 3.定义边
     # 3.1条件边
-    # graph_pipeline.add_conditional_edges(
-    #     "entry_node", entry_router,
-    #     {
-    #         "pdf_to_md_node": "pdf_to_md_node",
-    #         "md_img_node": "md_img_node",
-    #         END: END
-    #     }
-    # )
+    graph_pipeline.add_conditional_edges(
+        "entry_node", entry_router,
+        {
+            "pdf_to_md_node": "pdf_to_md_node",
+            "md_img_node": "md_img_node",
+            END: END
+        }
+    )
 
     # 3.2 顺序边
-    graph_pipeline.add_edge(START, "entry_node")
-    graph_pipeline.add_edge("entry_node", "pdf_to_md_node")
-    graph_pipeline.add_edge("pdf_to_md_node", END)
+    graph_pipeline.add_edge("pdf_to_md_node", "md_img_node")
+    graph_pipeline.add_edge("md_img_node", END)
 
     # 4.编译图
     return graph_pipeline.compile()
@@ -122,7 +123,7 @@ if __name__ == "__main__":
 
     setup_logging()
 
-    import_file_path1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\基于STM32智能门禁系统_简洁报告.pdf"
+    import_file_path1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用.pdf"
     file_dir1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
 
     final_state1 = run_import_graph(import_file_path1,file_dir1)
