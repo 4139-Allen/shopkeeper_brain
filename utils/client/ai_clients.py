@@ -1,7 +1,9 @@
 import threading
+
 from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+from FlagEmbedding import FlagReranker
 import logging
 from knowledge.utils.client.base import BaseClientManager
 
@@ -92,6 +94,72 @@ class AIClients(BaseClientManager):
     """
     _beg_m3_client: BGEM3EmbeddingFunction | None = None
     _bge_m3_lock = threading.Lock()
+
+    @classmethod
+    def get_beg_m3_client(cls) -> BGEM3EmbeddingFunction:
+        return cls._get_or_create(
+            "_beg_m3_client",
+            cls._bge_m3_lock,
+            cls._create_beg_m3_client)
+
+    @classmethod
+    def _create_beg_m3_client(cls) -> BGEM3EmbeddingFunction:
+        try:
+            model_name = cls._require_env("BGE_M3_PATH")
+            device = cls._require_env("BGE_DEVICE")
+            fp16 = cls._require_env("BGE_FP16")
+
+            bge_m3_ef = BGEM3EmbeddingFunction(
+                model_name=model_name,
+                device=device,
+                fp16=fp16
+            )
+            logger.info("bge_m3客户端初始化成功")
+            return bge_m3_ef
+        except EnvironmentError:
+            raise
+        except Exception as e:
+            logger.error(f"bge_m3客户端初始化失败：{e}")
+            raise ConnectionError(f"bge_m3客户端创建失败：{e}") from e
+
+    """
+    BGE-M3重排序模型客户端：
+    """
+    _bge_m3_rerank_client: FlagReranker | None = None
+    _bge_m3_rerank_lock = threading.Lock()
+
+    @classmethod
+    def get_bge_m3_rerank_client(cls) -> FlagReranker:
+        return cls._get_or_create(
+            "_bge_m3_rerank_client",
+            cls._bge_m3_rerank_lock,
+            cls._create_bge_m3_rerank_client
+        )
+
+    @classmethod
+    def _create_bge_m3_rerank_client(cls) -> FlagReranker:
+        try:
+            model_name_or_path = cls._require_env("BGE_RERANKER_LARGE")
+            device = cls._require_env("BGE_RERANKER_DEVICE")
+            fp16 = cls._require_env("BGE_RERANKER_FP16")
+
+            reranker = FlagReranker(
+                model_name_or_path=model_name_or_path,
+                devices=device,
+                fp16=fp16
+            )
+            logger.info("bge_m3_rerank客户端初始化成功")
+            return reranker
+        except EnvironmentError:
+            raise
+        except Exception as e:
+            logger.error(f"bge_m3_rerank客户端初始化失败：{e}")
+            raise ConnectionError(f"bge_m3_rerank客户端创建失败：{e}") from e
+
+if __name__ == "__main__":
+    print(AIClients.get_beg_m3_client())
+
+
 
 
 
