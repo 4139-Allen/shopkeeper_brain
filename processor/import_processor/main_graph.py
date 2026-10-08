@@ -5,14 +5,15 @@
 import json
 
 from langgraph.constants import START, END
-
+from langgraph.graph.state import CompiledStateGraph, StateGraph
 
 from knowledge.processor.import_processor.base import setup_logging
+from knowledge.processor.import_processor.nodes.document_split import DocumentSplitNode
 from knowledge.processor.import_processor.nodes.entry import EntryNood
 from knowledge.processor.import_processor.nodes.img_md import MarkDownImageNode
 from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
 from knowledge.processor.import_processor.state import ImportGraphState, create_default_state
-from langgraph.graph.state import CompiledStateGraph, StateGraph
+
 
 
 # 定义入口节点的 条件路由
@@ -65,7 +66,8 @@ def create_import_graph() -> CompiledStateGraph:
     nodes: dict = {
         "entry_node": EntryNood(),
         "pdf_to_md_node": PdfToMdNode(),
-        "md_img_node": MarkDownImageNode()
+        "md_img_node": MarkDownImageNode(),
+        "document_split_node": DocumentSplitNode()
     }
 
     # 2.1添加入口节点
@@ -88,7 +90,8 @@ def create_import_graph() -> CompiledStateGraph:
 
     # 3.2 顺序边
     graph_pipeline.add_edge("pdf_to_md_node", "md_img_node")
-    graph_pipeline.add_edge("md_img_node", END)
+    graph_pipeline.add_edge("md_img_node", "document_split_node")
+    graph_pipeline.add_edge("document_split_node", END)
 
     # 4.编译图
     return graph_pipeline.compile()
@@ -111,13 +114,15 @@ def run_import_graph(import_file_path: str, file_dir: str) -> ImportGraphState |
     # ** state 是 Python 的解包操作，将字典展开为关键字参数
     init_state = create_default_state(**state)
 
-    final_state= kb_import_graph_app.invoke(init_state)
+    final_state = kb_import_graph_app.invoke(init_state)
     return final_state
-    # for event in kb_import_graph_app.stream(state):
+
+    # final_state = None
+    # for event in kb_import_graph_app.stream(init_state):
     #     for node_name, node_state in event.items():
     #         final_state = state
-
-    return final_state
+    #
+    # return final_state
 
 if __name__ == "__main__":
 

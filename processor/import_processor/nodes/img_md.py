@@ -408,7 +408,7 @@ class ImageUploader:
                 self.logger.info(f"图片上传成功：{img.name}")
                 remote_urls[img.name] = remote_url
             except Exception as e:
-                self.logger.warning(f"图片上传失败：{img.name},保留本地路径")
+                self.logger.warning(f"图片上传失败：{img.name},保留本地路径：{e}")
                 remote_urls[img.name] = img.path
 
         self.logger.info(f"成功上传{len(remote_urls)}张图片到MinIO")

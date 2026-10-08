@@ -6,8 +6,11 @@
 from abc import ABC, abstractmethod
 from typing import TypeVar
 import logging
+import time
 from knowledge.processor.import_processor.config import ImportConfig, get_config
+from knowledge.processor.import_processor.exceptions import ImportProcessError
 from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.utils.task_util import add_running_task, add_done_task, add_node_duration
 
 T = TypeVar("T")
 
@@ -43,16 +46,34 @@ class BaseNode(ABC):
             ImportProcessError: 节点执行失败时抛出
         """
         task_id = state.get("task_id", "")
-        self.logger.info(f"----开始执行 {self.name} 节点----" + (f" task_id={task_id}" if task_id else ""))
         try:
+            # 1. 开始准备执行节点
+            self.logger.info(f"--- {self.name} 开始 ---")
+            if task_id:
+                add_running_task(task_id, self.name)
+
+            start_time = time.time()
+
+            # 2. 执行节点
             result = self.process(state)
-            self.logger.info(f"----{self.name} 节点执行完成----")
+
+            duration = time.time() - start_time
+
+            # 3. 执行节点成功
+            self.logger.info(f"--- {self.name} 完成 , 耗时 {duration:.2f}s ---")
+
+            if task_id:
+                add_done_task(task_id, self.name)
+                add_node_duration(task_id, self.name, duration)
+
             return result
         except Exception as e:
-            self.logger.error(f"{self.name} 节点执行失败: {e}", exc_info=True)
-            raise
-
-
+            self.logger.error(f"{self.name} 执行失败: {e}")
+            raise ImportProcessError(
+                message=str(e),
+                node_name=self.name,
+                cause=e
+            )
 
 
 
