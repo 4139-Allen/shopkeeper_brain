@@ -96,14 +96,14 @@ class AIClients(BaseClientManager):
     _bge_m3_lock = threading.Lock()
 
     @classmethod
-    def get_beg_m3_client(cls) -> BGEM3EmbeddingFunction:
+    def get_bge_m3_client(cls) -> BGEM3EmbeddingFunction:
         return cls._get_or_create(
             "_beg_m3_client",
             cls._bge_m3_lock,
-            cls._create_beg_m3_client)
+            cls._create_bge_m3_client)
 
     @classmethod
-    def _create_beg_m3_client(cls) -> BGEM3EmbeddingFunction:
+    def _create_bge_m3_client(cls) -> BGEM3EmbeddingFunction:
         try:
             model_name = cls._require_env("BGE_M3_PATH")
             device = cls._require_env("BGE_DEVICE")
@@ -157,7 +157,7 @@ class AIClients(BaseClientManager):
             raise ConnectionError(f"bge_m3_rerank客户端创建失败：{e}") from e
 
 if __name__ == "__main__":
-    print(AIClients.get_beg_m3_client())
+    print(AIClients.get_bge_m3_client())
 
 
 

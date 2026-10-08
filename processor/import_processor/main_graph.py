@@ -11,6 +11,7 @@ from knowledge.processor.import_processor.base import setup_logging
 from knowledge.processor.import_processor.nodes.document_split import DocumentSplitNode
 from knowledge.processor.import_processor.nodes.entry import EntryNood
 from knowledge.processor.import_processor.nodes.img_md import MarkDownImageNode
+from knowledge.processor.import_processor.nodes.item_name_recognition import ItemNameRecognitionNode
 from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
 from knowledge.processor.import_processor.state import ImportGraphState, create_default_state
 
@@ -67,7 +68,8 @@ def create_import_graph() -> CompiledStateGraph:
         "entry_node": EntryNood(),
         "pdf_to_md_node": PdfToMdNode(),
         "md_img_node": MarkDownImageNode(),
-        "document_split_node": DocumentSplitNode()
+        "document_split_node": DocumentSplitNode(),
+        "item_name_recognition_node": ItemNameRecognitionNode()
     }
 
     # 2.1添加入口节点
@@ -91,7 +93,8 @@ def create_import_graph() -> CompiledStateGraph:
     # 3.2 顺序边
     graph_pipeline.add_edge("pdf_to_md_node", "md_img_node")
     graph_pipeline.add_edge("md_img_node", "document_split_node")
-    graph_pipeline.add_edge("document_split_node", END)
+    graph_pipeline.add_edge("document_split_node", "item_name_recognition_node")
+    graph_pipeline.add_edge("item_name_recognition_node", END)
 
     # 4.编译图
     return graph_pipeline.compile()
@@ -132,6 +135,8 @@ if __name__ == "__main__":
     file_dir1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
 
     final_state1 = run_import_graph(import_file_path1,file_dir1)
+
+    #打印最终状态及图
     print(json.dumps(final_state1,indent=4,ensure_ascii=False))
     kb_import_graph_app.get_graph().print_ascii()
 

@@ -283,12 +283,12 @@ if __name__ == "__main__":
     file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\auto\万用表RS-12的使用_new.md"
 
     with open(file_path, "r", encoding="utf-8")as f:
-        md_content = f.read()
+        md_content_1 = f.read()
 
     doc_state:ImportGraphState = {
         "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir",
         "file_title":"万用表RS-12的使用",
-        "md_content":md_content
+        "md_content":md_content_1
     }
 
     node.process(doc_state)
