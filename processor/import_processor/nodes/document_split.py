@@ -147,6 +147,7 @@ class DocumentSplitNode(BaseNode):
         段落 → 换行 → 句子标点 → 空格"的优先级递归切成不超过上限的多块,
         每块冠以"标题 - 序号";若切不动则原样保留。
         """
+        self.log_step("step3","正在切分较长段落")
         # 1.先切长的（chunk 太长(超过 max)切掉）
         current_sections = []
         for section in sections:
@@ -159,7 +160,6 @@ class DocumentSplitNode(BaseNode):
         return final_sections
 
     def split_long_section(self, section, max_content_length):
-        self.log_step("step3","正在切分较长段落")
         # 1.获取section的属性
         title = section.get("title")
         body = section.get("body")
