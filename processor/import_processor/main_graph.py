@@ -8,9 +8,11 @@ from langgraph.constants import START, END
 from langgraph.graph.state import CompiledStateGraph, StateGraph
 
 from knowledge.processor.import_processor.base import setup_logging
+from knowledge.processor.import_processor.nodes.bge_embedding import BgeEmbeddingChunksNode
 from knowledge.processor.import_processor.nodes.document_split import DocumentSplitNode
 from knowledge.processor.import_processor.nodes.entry import EntryNood
 from knowledge.processor.import_processor.nodes.img_md import MarkDownImageNode
+from knowledge.processor.import_processor.nodes.import_milvus import ImportMilvusNode
 from knowledge.processor.import_processor.nodes.item_name_recognition import ItemNameRecognitionNode
 from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
 from knowledge.processor.import_processor.state import ImportGraphState, create_default_state
@@ -69,7 +71,9 @@ def create_import_graph() -> CompiledStateGraph:
         "pdf_to_md_node": PdfToMdNode(),
         "md_img_node": MarkDownImageNode(),
         "document_split_node": DocumentSplitNode(),
-        "item_name_recognition_node": ItemNameRecognitionNode()
+        "item_name_recognition_node": ItemNameRecognitionNode(),
+        "bge_embedding_chunks_node": BgeEmbeddingChunksNode(),
+        "import_milvus_node": ImportMilvusNode()
     }
 
     # 2.1添加入口节点
@@ -94,7 +98,9 @@ def create_import_graph() -> CompiledStateGraph:
     graph_pipeline.add_edge("pdf_to_md_node", "md_img_node")
     graph_pipeline.add_edge("md_img_node", "document_split_node")
     graph_pipeline.add_edge("document_split_node", "item_name_recognition_node")
-    graph_pipeline.add_edge("item_name_recognition_node", END)
+    graph_pipeline.add_edge("item_name_recognition_node", "bge_embedding_chunks_node")
+    graph_pipeline.add_edge("bge_embedding_chunks_node", "import_milvus_node")
+    graph_pipeline.add_edge("import_milvus_node", END)
 
     # 4.编译图
     return graph_pipeline.compile()

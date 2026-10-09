@@ -256,7 +256,7 @@ class DocumentSplitNode(BaseNode):
         return chunks
 
     def _backup_chunks(self, state, chunks):
-        self.log_step("step6", "组合标题和内容")
+        self.log_step("step6", "备份")
         """
         将切分结果备份到json文件
         :param state:
