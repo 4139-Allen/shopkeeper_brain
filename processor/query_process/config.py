@@ -65,11 +65,11 @@ class QueryConfig:
     )
 
     # ==================== LLM 配置 ====================
-    openai_api_base: str = field(
-        default_factory=lambda: os.getenv("OPENAI_API_BASE", "")
+    dashscope_api_base: str = field(
+        default_factory=lambda: os.getenv("QWEN_BASE_URL", "")
     )
-    openai_api_key: str = field(
-        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    dashscope_api_key: str = field(
+        default_factory=lambda: os.getenv("QWEN_API_KEY", "")
     )
     default_model: str = field(
         default_factory=lambda: os.getenv("MODEL", "")

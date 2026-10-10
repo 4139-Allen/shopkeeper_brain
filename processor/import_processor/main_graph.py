@@ -11,7 +11,7 @@ from knowledge.processor.import_processor.base import setup_logging
 from knowledge.processor.import_processor.nodes.bge_embedding import BgeEmbeddingChunksNode
 from knowledge.processor.import_processor.nodes.document_split import DocumentSplitNode
 from knowledge.processor.import_processor.nodes.entry import EntryNood
-from knowledge.processor.import_processor.nodes.img_md import MarkDownImageNode
+from knowledge.processor.import_processor.nodes.md_img import MarkDownImageNode
 from knowledge.processor.import_processor.nodes.import_milvus import ImportMilvusNode
 from knowledge.processor.import_processor.nodes.item_name_recognition import ItemNameRecognitionNode
 from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
@@ -67,13 +67,13 @@ def create_import_graph() -> CompiledStateGraph:
 
     # 2.定义节点
     nodes: dict = {
-        "entry_node": EntryNood(),
-        "pdf_to_md_node": PdfToMdNode(),
-        "md_img_node": MarkDownImageNode(),
-        "document_split_node": DocumentSplitNode(),
-        "item_name_recognition_node": ItemNameRecognitionNode(),
-        "bge_embedding_chunks_node": BgeEmbeddingChunksNode(),
-        "import_milvus_node": ImportMilvusNode()
+        "entry_node": EntryNood(),                                  # 入口，识别pdf或md文档给下一节点处理
+        "pdf_to_md_node": PdfToMdNode(),                            # pdf 转 md 文档节点
+        "md_img_node": MarkDownImageNode(),                         # md 文档处理
+        "document_split_node": DocumentSplitNode(),                 # 文档切片
+        "item_name_recognition_node": ItemNameRecognitionNode(),    # 商品名识别
+        "bge_embedding_chunks_node": BgeEmbeddingChunksNode(),      # 向量化切片
+        "import_milvus_node": ImportMilvusNode()                    # 把切片存入milvus
     }
 
     # 2.1添加入口节点
@@ -102,7 +102,7 @@ def create_import_graph() -> CompiledStateGraph:
     graph_pipeline.add_edge("bge_embedding_chunks_node", "import_milvus_node")
     graph_pipeline.add_edge("import_milvus_node", END)
 
-    # 4.编译图
+    # 4.编译图(返回可运行的状态)
     return graph_pipeline.compile()
 
 

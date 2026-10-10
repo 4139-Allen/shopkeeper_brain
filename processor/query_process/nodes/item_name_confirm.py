@@ -122,13 +122,16 @@ class ItemNameAligner:
 
         # 1.查询向量数据库，解析结果，返回查询结果列表：字典为： 提取商品名称 - 得分
         search_result: List[Dict[str, Any]] = self._match_vector(item_names)
+        self.logger.info(f"[调试-3] 每提取名对应 milvus 匹配:{search_result}")
 
         # 2.评分对齐
         confirmed, options = self._item_name_score_align(search_result)
+        self.logger.info(f"[调试-4] 对齐前 confirmed:{confirmed} options:{options}")
 
         # 3.分数差异过滤
         if len(confirmed) > 1:
             confirmed = self._item_name_score_filter(confirmed, search_result)
+            self.logger.info(f"[调试-5] 差异过滤后 confirmed:{confirmed}")
 
         return confirmed, options
 
@@ -240,7 +243,7 @@ class ItemNameAligner:
         """分数差异过滤,剔除误判"""
         item_name_score = {}
         for search_result in search_results:
-            matches = search_result.get("matches")
+            matches = search_result.get("matches", "")
             for m in matches:
                 score = m.get("score")
                 item_name = m.get("item_name")
@@ -262,14 +265,14 @@ class ItemNameConfirmNode(BaseNode):
 
     def __init__(self):
         super().__init__()
-        self._item_name_extractor = ItemNameExtractor(self.logger)
-        self._item_name_aligner = ItemNameAligner(self.logger)
+        self._item_name_extractor = ItemNameExtractor(self.logger)  #商品名称提取器
+        self._item_name_aligner = ItemNameAligner(self.logger)      #执行匹配，对齐，过滤三步流程
 
     def process(self, state: QueryGraphState) -> QueryGraphState:
         # 1.获取历史
         # 1.1. 获取原始问题
-        original_query = state.get("original_query")
-        session_id = state.get("session_id")
+        original_query = state.get("original_query", "")
+        session_id = state.get("session_id", "")
 
         # 1.2获取历史会话并拼串
         chat_history = get_recent_messages(session_id)
@@ -283,14 +286,17 @@ class ItemNameConfirmNode(BaseNode):
         # 2.LLM提取商品名称,并且清理代码块后的结果字符串
         clean_llm_result = self._item_name_extractor.extract_item_name(original_query, history_text)
 
-        item_names = clean_llm_result.get("item_names")
-        rewritten_query = clean_llm_result.get("rewritten_query")
+        item_names = clean_llm_result.get("item_names", "")
+        rewritten_query = clean_llm_result.get("rewritten_query", "")
+        self.logger.info(f"[调试-1] LLM 提取商品名:{item_names}")
+
 
         # 3.向量匹配: 查询向量数据库  && 过滤
         if item_names:
             confirmed, options = self._item_name_aligner.match_align_filter(item_names)
         else:
             confirmed, options = [], []
+        self.logger.info(f"[调试-2] 对齐后 confirmed:{confirmed}, options:{options}")
 
         # 4.决策分支，更新sate
         self._decide(state, item_names, confirmed, options, rewritten_query)
@@ -298,7 +304,7 @@ class ItemNameConfirmNode(BaseNode):
         # 5.历史回填
         if confirmed:
             ids_to_update = [
-                str(msg["_id"] for msg in chat_history if not msg.get("item_names"))
+                str(msg["_id"]) for msg in chat_history if not msg.get("item_names")
             ]
             if ids_to_update:
                 try:
@@ -306,7 +312,15 @@ class ItemNameConfirmNode(BaseNode):
                 except Exception as e:
                     self.logger.warning(f"回填历史 item_name 失败: {e}")
 
-        state['history'] = chat_history
+        # state['history'] = chat_history
+
+        # 6.写入state
+        # 剔除 _id：Mongo 的 ObjectId 不是 JSON 可序列化的，
+        # 而 langgraph 的 state 需要能 json.dumps（checkpoint / SSE / 日志都依赖），
+        # 且下游只用到 role / text 两个字段。
+        state['history'] = [
+            {k: v for k, v in msg.items() if k != "_id"} for msg in chat_history
+        ]
 
         return state
 
@@ -331,7 +345,7 @@ if __name__ == "__main__":
     from knowledge.processor.query_process.state import create_default_state
     init_state: QueryGraphState | dict = create_default_state(
         task_id="task_001",
-        original_query="RS-12 数字万用表怎么测试电阻？以及华为擎云L420 用户手册 中包含操作环境嘛？"
+        original_query="RS-12 数字万用表怎么测试电阻？以及华为擎云 L420x中包含操作环境嘛"
     )
 
     print(f"输入: {json.dumps(init_state, ensure_ascii=False, indent=2)}\n")
