@@ -1,6 +1,17 @@
 """
 任务id: 主要追踪上传文件（任务）的状态流程的
 上传一个文件就属于一个任务（唯一的任务id）---未来如果想知道上传的这个文件处理到哪里了就需要用任务id来查询
+
+三个层面作用：
+1. API 层 —— 生成与对外查询的"凭证"
+/upload 生成唯一 task_id 并立即返回前端；/status/{task_id} 供前端凭号轮询,查看"干到哪一步、每步耗时、整体状态"——它是异步任务与用户界面之间的关联凭据。
+
+2. Service 层 —— 标记任务"整体生命周期"
+import_file_service 用 update_task_status 驱动全局状态流转(processing → completed/failed),并手动记录上传保存文件这步的 running/done——它回答的是**"这次导入整件事成没成"**。
+
+3. BaseNode 基类层 —— 逐节点自动追踪"细粒度进度"
+所有节点被调用时统一经过 __call__ 包装:执行前 add_running_task、执行后 add_done_task + add_node_duration,并把答案用 set_task_result 存入任务。子类 process 完全不感知 task_id——它回答的是**"具体哪个节点在跑、跑了多久、结果是什么"**。
+
 """
 from collections import defaultdict
 

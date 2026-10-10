@@ -529,7 +529,7 @@ if __name__ == "__main__":
     setup_logging()
     node = MarkDownImageNode()
     state1:ImportGraphState = {
-        "md_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\auto\万用表RS-12的使用.md"
+        "md_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\auto\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn).md"
     }
     node.process(state1)
 

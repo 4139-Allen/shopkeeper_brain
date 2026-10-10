@@ -276,7 +276,7 @@ class DocumentSplitNode(BaseNode):
             return
 
         os.makedirs(local_dir, exist_ok=True)  # exist_ok=True：如果目录已存在，不会抛出异常，直接跳过
-        output_path = os.path.join(local_dir, "chunks.json")
+        output_path = os.path.join(local_dir, "chunks1_split.json")
         try:
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(chunks, f, ensure_ascii=False, indent=4)
@@ -288,14 +288,14 @@ if __name__ == "__main__":
 
     node = DocumentSplitNode()
 
-    file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\auto\万用表RS-12的使用_new.md"
+    file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\auto\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn).md"
 
     with open(file_path, "r", encoding="utf-8")as f:
         md_content_1 = f.read()
 
     doc_state:ImportGraphState = {
-        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir",
-        "file_title":"万用表RS-12的使用",
+        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc",
+        "file_title":"华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)",
         "md_content":md_content_1
     }
 

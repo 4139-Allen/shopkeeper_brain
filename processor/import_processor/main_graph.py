@@ -136,17 +136,44 @@ def run_import_graph(import_file_path: str, file_dir: str) -> ImportGraphState |
     #
     # return final_state
 
+#  ==  测试  ==
 if __name__ == "__main__":
+
+    def _brief_state(value):
+        """
+        递归精简状态字典:长字段摘要输出,避免控制台刷屏
+        - dense_vector → <1024维稠密向量,前3值:...>
+        - sparse_vector → <n个非零token>
+        - 超长字符串(>100字符) → 截断并标注总长度
+        - 其余字段原样输出
+        """
+        if isinstance(value, dict):
+            brief = {}
+            for key, v in value.items():
+                if key == "dense_vector" and isinstance(v, list):
+                    brief[key] = f"<{len(v)}维稠密向量,前3值:{[round(x, 4) for x in v[:3]]}>"
+                elif key == "sparse_vector" and isinstance(v, dict):
+                    brief[key] = f"<{len(v)}个非零token的稀疏向量>"
+                elif isinstance(v, (dict, list)):
+                    brief[key] = _brief_state(v)  # 递归处理 chunks 等嵌套结构
+                elif isinstance(v, str) and len(v) > 100:
+                    brief[key] = f"{v[:100]}...(总长度:{len(v)})"
+                else:
+                    brief[key] = v
+            return brief
+        if isinstance(value, list):
+            return [_brief_state(item) if isinstance(item, (dict, list)) else item for item in value]
+        return value
 
     setup_logging()
 
-    import_file_path1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用.pdf"
+    import_file_path1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L540 用户指南-(KLVV,UOS&KOS_01,zh-cn).pdf"
     file_dir1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
 
     final_state1 = run_import_graph(import_file_path1,file_dir1)
 
-    #打印最终状态及图
-    print(json.dumps(final_state1,indent=4,ensure_ascii=False))
+    #打印最终状态(向量等长字段已摘要)及图
+    print(json.dumps(_brief_state(final_state1),indent=4,ensure_ascii=False))
     kb_import_graph_app.get_graph().print_ascii()
 
 

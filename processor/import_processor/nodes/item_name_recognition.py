@@ -21,7 +21,7 @@ class ItemNameRecognitionNode(BaseNode):
             ↓
     BGE-M3 将商品名向量化(dense 1024维 + sparse)
             ↓
-    商品名向量存入 milvus(item_name 集合)
+    商品名向量存入 milvus(item_name 集合,按 file_title 先删旧记录再插入,保证幂等)
             ↓
     回填 item_name 到每个 chunk 与 state → 交给下游节点(向量嵌入)
     """
@@ -170,7 +170,14 @@ class ItemNameRecognitionNode(BaseNode):
                 self.logger.info(f"集合【{item_name_collection}】不存在，创建集合")
                 self._create_item_name_collection(item_name_collection, milvus_client)
 
-            # 4.保存向量数据到milvus
+            # 4.幂等处理:按 file_title 删除旧记录,避免同一文件重复导入产生重复数据
+            delete_result = milvus_client.delete(
+                collection_name=item_name_collection,
+                filter=f'file_title == "{file_title}"'
+            )
+            self.logger.info(f"已清理文件【{file_title}】旧商品名记录:{delete_result.get('delete_count', 0)}条")
+
+            # 5.保存向量数据到milvus
             data = {
                 "file_title": file_title,
                 "item_name": item_name,
@@ -202,6 +209,11 @@ class ItemNameRecognitionNode(BaseNode):
                               index_name="sparse_vector_index",
                               index_type="SPARSE_INVERTED_INDEX", metric_type="IP")
 
+        # file_title 用于按文件删除/过滤,无索引的 VARCHAR 字段不能参与 filter
+        index_param.add_index(field_name="file_title",
+                              index_name="file_title_index",
+                              index_type="INVERTED")
+
         milvus_client.create_collection(collection_name=item_name_collection, schema=schema, index_params=index_param)
         self.logger.info(f"集合【{item_name_collection}】创建成功")
 
@@ -223,7 +235,7 @@ class ItemNameRecognitionNode(BaseNode):
             return
 
         os.makedirs(local_dir, exist_ok=True) #exist_ok=True：如果目录已存在，不会抛出异常，直接跳过
-        output_path = os.path.join(local_dir, "chunks2.json")
+        output_path = os.path.join(local_dir, "chunks2_item_name.json")
         try:
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(chunks, f, ensure_ascii=False, indent=4)
@@ -236,14 +248,14 @@ if __name__ == "__main__":
 
     node1 = ItemNameRecognitionNode()
 
-    chunks_file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\chunks.json"
-    with open(chunks_file_path, "r", encoding="utf-8")as f:
-        chunks1 = json.load(f)
+    chunks_file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\tem_doc\chunks.json"
+    with open(chunks_file_path, "r", encoding="utf-8")as f1:
+        chunks1 = json.load(f1)
 
     state1:ImportGraphState = {
         "chunks":chunks1,
         "file_title":"万用表RS-12的使用",
-        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
+        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\tem_doc"
     }
 
     node1.process(state1)

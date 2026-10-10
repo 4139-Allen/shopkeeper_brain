@@ -125,14 +125,14 @@ if __name__ == "__main__":
 
     node1 = BgeEmbeddingChunksNode()
 
-    chunks_file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\chunks2.json"
+    chunks_file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc\chunks2_item_name.json"
 
     with open(chunks_file_path, "r", encoding="utf-8") as f:
         chunks1 = json.load(f)
 
     state1:ImportGraphState = {
         "chunks":chunks1,
-        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
+        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc"
     }
 
     node1.process(state1)

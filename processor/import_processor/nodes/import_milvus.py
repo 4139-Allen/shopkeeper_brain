@@ -259,7 +259,7 @@ if __name__ == "__main__":
     import json
     setup_logging()
 
-    temp_dir = Path(r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir")
+    temp_dir = Path(r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc")
 
     input_path = temp_dir / "chunks_vector.json"
     output_path = temp_dir / "chunks_vector_ids.json"

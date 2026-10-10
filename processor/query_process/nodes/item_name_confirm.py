@@ -19,7 +19,7 @@ from knowledge.utils.mongo_history_util import get_recent_messages, update_messa
 
 class ItemNameExtractor:
     """
-    商品名称提取器
+    商品名称提取器（解决用户提出的模糊问题，llm返回处理后的用户问题，增强检索的准确率）
     基于用户的原始问题和历史对话提取用户真正想问的商品名称
     """
 
@@ -69,7 +69,8 @@ class ItemNameExtractor:
         # 8.返回结果
         return result
 
-    def _clean_parse(self, llm_content):
+    @staticmethod
+    def _clean_parse(llm_content):
         """清洗LLM的输出结果。
         这段代码用于清理 LLM 返回的响应文本：
             第一行：去除开头的 Markdown 代码块标记（如

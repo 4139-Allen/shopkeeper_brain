@@ -64,8 +64,8 @@ class EntryNood(BaseNode):
 if __name__ == "__main__":
     setup_logging()
     entry_state:ImportGraphState = {
-        "import_file_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\基于STM32智能门禁系统_简洁报告.pdf",
-        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\result_doc"
+        "import_file_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn).pdf",
+        "file_dir":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
     }
     #实例化入口节点 类对象
     entry = EntryNood()
