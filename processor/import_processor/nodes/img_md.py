@@ -432,7 +432,21 @@ class ImageUploader:
 
 # --定义主节点--
 class MarkDownImageNode(BaseNode):
-    """md文档处理主节点，编排调度"""
+    """
+    md文档处理主节点，编排调度
+    主要职责：
+    上一节点传出的 md_path(pdf 转换后的 md 文档)
+            ↓
+    读取 md 内容,定位图片目录
+            ↓
+    扫描图片目录 → 提取每张图片的上下文(标题/上文/下文)
+            ↓
+    VLM 视觉模型生成图片摘要(带速率限制)
+            ↓
+    图片上传 MinIo → 替换 md 中图片地址为远程 URL + 摘要
+            ↓
+    备份新 md → state['md_content'] 更新 → 交给下游节点(文档切分)
+    """
 
     name = "md_img_node"
 
@@ -514,10 +528,10 @@ class MarkDownImageNode(BaseNode):
 if __name__ == "__main__":
     setup_logging()
     node = MarkDownImageNode()
-    state:ImportGraphState = {
+    state1:ImportGraphState = {
         "md_path":r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\auto\万用表RS-12的使用.md"
     }
-    node.process(state)
+    node.process(state1)
 
 
 

@@ -129,7 +129,10 @@ def run_import_graph(import_file_path: str, file_dir: str) -> ImportGraphState |
     # final_state = None
     # for event in kb_import_graph_app.stream(init_state):
     #     for node_name, node_state in event.items():
-    #         final_state = state
+    #         print(f"\n===== 节点[{node_name}]执行完成,状态字段: {list(node_state.keys())} =====")
+    #         # 想看节点输出全量内容时取消注释(注意 chunks 含 1024 维向量,打印会很长)
+    #         # print(json.dumps(node_state, indent=4, ensure_ascii=False, default=str))
+    #         final_state = node_state
     #
     # return final_state
 

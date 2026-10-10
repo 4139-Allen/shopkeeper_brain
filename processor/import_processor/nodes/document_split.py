@@ -10,10 +10,18 @@ from knowledge.utils.markdown_util import MarkdownTableLinearizer
 
 class DocumentSplitNode(BaseNode):
     """
-    文档切分节点
-    处理流程：
-        1.读取md内容，参数校验，换行符统计
-        2.按标题切割
+    主要职责：
+    上一节点传出的 md_content + file_title
+            ↓
+    参数校验,统一换行符(\r\n → \n)
+            ↓
+    按 h1-h6 标题切分为 section(记录 title/parent_title)
+            ↓
+    长 section 递归切分 / 短 section 贪心合并(保证语义完整)
+            ↓
+    组装 chunks(title + content) → state['chunks'] 更新
+            ↓
+    备份 chunks.json → 交给下游节点(商品名识别)
     """
     name = "document_split_node"
 

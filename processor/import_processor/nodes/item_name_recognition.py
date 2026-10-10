@@ -11,6 +11,21 @@ from knowledge.utils.client.storage_clients import StorageClients
 
 
 class ItemNameRecognitionNode(BaseNode):
+    """
+    主要职责：
+    上一节点传出的 chunks(已有 title + content) + file_title
+            ↓
+    拼接前 k 个 chunk 内容作为 LLM 识别上下文
+            ↓
+    LLM 识别商品名(失败/空值降级为 file_title)
+            ↓
+    BGE-M3 将商品名向量化(dense 1024维 + sparse)
+            ↓
+    商品名向量存入 milvus(item_name 集合)
+            ↓
+    回填 item_name 到每个 chunk 与 state → 交给下游节点(向量嵌入)
+    """
+
     name = "item_name_recognition_node"
 
     def process(self, state: ImportGraphState) -> ImportGraphState:

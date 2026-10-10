@@ -169,6 +169,19 @@ class ImportMilvusNode(BaseNode):
     """
     向量数据入库节点（门面角色）
     协调 Schema 构建、 索引构建  、 数据插入
+
+    主要职责：
+    上一节点传出的 chunks(已有 dense_vector + sparse_vector)
+            ↓
+    参数校验:过滤无混合向量的无效块,确定向量维度 dim
+            ↓
+    获取milvus客户端,确保集合存在(不存在则构建 schema + 索引并创建)
+            ↓
+    幂等处理:按 file_title 删除旧记录,避免重复数据
+            ↓
+    批量插入 milvus → 回填自增 chunk_id 到每个 chunk
+            ↓
+    state['chunks'] 更新 → 导入流程结束
     """
 
     name = "import_milvus_node"

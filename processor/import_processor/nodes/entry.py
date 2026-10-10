@@ -10,9 +10,16 @@ from knowledge.processor.import_processor.state import ImportGraphState
 
 class EntryNood(BaseNode):
     """
-    入口节点的实现逻辑：
-    根据输入的文件扩展名设置对应的处理标志 交给下一节点处理
-    决定后续流程走PDF转换分支，还是直接处理MD分支
+    主要职责：
+    外部传入 import_file_path + file_dir
+        ↓
+    校验文件路径与目录非空
+        ↓
+    识别文件扩展名(.pdf / .md)
+        ↓
+    设置路由标志(is_pdf_read_enabled / is_md_read_enabled)
+        ↓
+    提取文件标题 file_title 写入 state → 交给条件路由分发
     """
     name = "entry"
 

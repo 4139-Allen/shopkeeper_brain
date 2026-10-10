@@ -14,7 +14,16 @@ from knowledge.processor.import_processor.state import ImportGraphState
 
 class PdfToMdNode(BaseNode):
     """
-    PDF 转 MD 节点
+    主要职责：
+    上一节点传出的 pdf 文件路径(import_file_path + file_dir)
+            ↓
+    校验 pdf 文件路径合法性
+            ↓
+    执行 mineru 命令将 pdf 解析为 md(子进程实时输出日志)
+            ↓
+    定位解析产物 md 文件的实际路径
+            ↓
+    state['md_path'] 更新 → 交给下游节点(md图片处理)
     """
     name = "pdf_to_md_node"
 
