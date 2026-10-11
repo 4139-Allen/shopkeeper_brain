@@ -6,7 +6,19 @@ from knowledge.processor.query_process.state import QueryGraphState
 
 
 class RrfNode(BaseNode):
-    """RRF融合排序节点"""
+    """
+    RRF融合排序节点
+    主要职责：
+    上游两路检索结果 embedding_chunks + hyde_embedding_chunks
+            ↓
+    各路格式规整(取 entity 内层文档,过滤无效项)
+            ↓
+    按 RRF 公式累加各文档得分: score += weight / (k + rank)
+            ↓
+    按分数降序排序,截取 top_k
+            ↓
+    state['rrf_chunks'] = 融合后的文档列表 → 交给 Rerank 重排
+    """
 
     # 节点名称
     name = "rrf_node"

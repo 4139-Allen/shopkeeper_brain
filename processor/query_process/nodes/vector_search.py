@@ -11,7 +11,21 @@ from knowledge.utils.milvus_util import item_names_filter, create_hybrid_search_
 
 
 class VectorSearchNode(BaseNode):
-    """向量搜索节点"""
+    """
+    向量搜索节点
+    主要职责：
+    上一节点确认的 rewritten_query + item_names
+            ↓
+    参数校验(缺失抛 StateFieldError)
+            ↓
+    BGE-M3 将改写查询向量化(dense + sparse, is_query=True)
+            ↓
+    构建 item_name 过滤表达式
+            ↓
+    milvus chunks 集合混合检索 top5
+            ↓
+    state['embedding_chunks'] = 检索结果 → 交给 RRF 融合
+    """
 
     # 节点名称
     name = "vector_search_node"

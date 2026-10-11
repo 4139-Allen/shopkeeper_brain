@@ -1,0 +1,27 @@
+graph TB
+    subgraph 未实现层
+        A[api 接口层<br/>HTTP/SSE 入口] --> B[services 服务层]
+        B --> C[schema 请求响应模型]
+    end
+    subgraph 已实现层
+        D["processor 流程编排层<br/>LangGraph 双链路"]
+        E[prompt 提示词层]
+        F[utils 基础设施层]
+    end
+    subgraph 外部中间件
+        G[(Milvus<br/>chunks + item_name)]
+        H[(MongoDB<br/>chat_message)]
+        I[(MinIO<br/>图片)]
+        J[百炼 LLM/VLM<br/>WebSearch MCP]
+        K[BGE-M3 嵌入/重排]
+        L[MinerU PDF解析]
+    end
+    C --> D
+    D --> E
+    D --> F
+    F --> G
+    F --> H
+    F --> I
+    F --> J
+    F --> K
+    D --> L

@@ -259,6 +259,20 @@ class ItemNameConfirmNode(BaseNode):
     商品名称确认节点
 
         流程：获取历史 -> LLM提取商品名称 -> 向量匹配 -> 评分对齐  -> 更新状态  ->   历史回填
+
+    主要职责：
+    上游传入的 original_query + session_id
+            ↓
+    Mongo 拉取最近会话并拼成 history_text
+            ↓
+    LLM 结合历史从问题中提取商品名 + 改写查询(失败降级为原查询)
+            ↓
+    商品名混合检索 milvus item_name 集合(向量匹配)
+            ↓
+    评分对齐(≥0.7同名/唯一→confirmed, 多候选/中分→options) + 分差过滤
+            ↓
+    state 更新 confirmed 商品名与 rewritten_query(歧义/无识别则直接写澄清/致歉 answer) → 交给下游检索
+
     """
 
     name = "item_name_confirm_node"

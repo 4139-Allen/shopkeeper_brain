@@ -17,6 +17,19 @@ class HyDeSearchNode(BaseNode):
     HyDE 检索节点
     流程：
         参数校验 -> LLM生成假设文档 -> 拼接原查询 ->  向量化 ->  混合检索
+
+    主要职责：
+    上一节点确认的 rewritten_query + item_names
+            ↓
+    LLM 扮演文档专家生成"假设性答案文档"(检索前的查询扩展)
+            ↓
+    拼接: 原查询 + 假设文档 → BGE-M3 混合向量化
+            ↓
+    构建 item_name 过滤表达式
+            ↓
+    milvus chunks 集合混合检索 top5
+            ↓
+    state['hyde_embedding_chunks'] = 检索结果 → 交给 RRF 融合
     """
 
     # 节点名称
@@ -96,7 +109,7 @@ class HyDeSearchNode(BaseNode):
 
         # 3.获取系统提示词和用户提示词
         user_prompt = HYDE_USER_PROMPT_TEMPLATE.format(rewritten_query=validated_query, item_names=validate_item_names)
-        system_prompt = f"您是一位{validate_item_names}的技术文档领域的专家，主要擅长编写技术文档，操作手册，文档规格说明。"
+        system_prompt = f"你是一位{validate_item_names}的技术文档领域的专家，主要擅长编写技术文档，操作手册，文档规格说明。"
         try:
             # 4.获取AIMessage
             llm_response = llm_client.invoke([
@@ -106,6 +119,7 @@ class HyDeSearchNode(BaseNode):
 
             # 5.获取内容
             llm_content = getattr(llm_response, "content", "")
+            self.logger.info(f"大模型检索增强生成的查询语句：\n{llm_content}")
 
             # 6.判断是否存在
             if not llm_content:

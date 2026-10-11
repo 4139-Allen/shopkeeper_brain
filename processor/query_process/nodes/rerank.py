@@ -16,6 +16,18 @@ class RerankNode(BaseNode):
     """Rerank  重排序节点
         流程：
             合并多源文档 -> Reranker计算相关性 ->  断崖检测动态截断
+    主要职责：
+    上游 rrf_chunks(本地) + web_search_docs(网络) + 查询
+            ↓
+    合并多源文档并统一格式(source=local/web)
+            ↓
+    BGE-M3 Reranker 对 (query, doc) 逐对计算相关性原始分数
+            ↓
+    sigmoid 归一化到 (0,1) → 按分数降序排序
+            ↓
+    断崖检测(相邻分差≥阈值处截断) + 保底最低文档数
+            ↓
+    state['reranked_docs'] = 精排文档 → 交给答案输出
     """
 
     name = "rerank_node"

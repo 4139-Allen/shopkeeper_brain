@@ -11,7 +11,21 @@ from knowledge.processor.query_process.state import QueryGraphState
 
 
 class WebSearchMcpNode(BaseNode):
-    """MCP网络搜索节点"""
+    """
+    MCP网络搜索节点
+    主要职责：
+    上一节点确认的 rewritten_query + item_names
+            ↓
+    参数校验(缺失抛 StateFieldError)
+            ↓
+    MCP Streamable HTTP 连接百炼 WebSearch 服务
+            ↓
+    调用 bailian_web_search 工具联网检索(count=3)
+            ↓
+    解析 TextContent 中的 JSON → 提取 title/url/snippet
+            ↓
+    state['web_search_docs'] = 搜索结果 → 交给 Rerank 重排
+    """
 
     # 节点名称
     name = "web_search_mcp_node"
