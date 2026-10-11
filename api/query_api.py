@@ -91,7 +91,7 @@ def register_routers(app: FastAPI):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"获取历史记录异常：str(e)")
 
-    @app.get("/history/{session_id}")
+    @app.delete("/history/{session_id}")
     async def clear_chat_history(session_id: str, service: QueryService = Depends(get_query_service)):
         count = service.clear_history(session_id)
         return {"message": "历史记录清除成功", "deleted_count": count}

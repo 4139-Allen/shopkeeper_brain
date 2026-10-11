@@ -5,6 +5,8 @@ import queue
 from typing import Dict, Any, Optional, AsyncGenerator
 from fastapi import Request
 
+logger = logging.getLogger(__name__)
+
 
 class SSEEvent:
     PROGRESS = "progress"  # 任务节点进度
@@ -51,10 +53,13 @@ def push_sse_event(task_id: str, event: str, data: Dict[str, Any]):
     # 1. 获取 SSE 队列
     stream_queue = get_sse_queue(task_id)
 
-    # 2. 队列存在
-    if stream_queue:
-        # 3. 将事件推送到队列
-        stream_queue.put({"event": event, "data": data})
+    # 2. 队列不存在（连接已断开/队列已清理）——显式记录，避免事件被静默丢弃
+    if stream_queue is None:
+        logger.warning(f"SSE 队列不存在，事件被丢弃 task_id={task_id} event={event}")
+        return
+
+    # 3. 将事件推送到队列
+    stream_queue.put({"event": event, "data": data})
 
 
 async def sse_generator(task_id: str, request: Request) -> AsyncGenerator:
@@ -76,11 +81,12 @@ async def sse_generator(task_id: str, request: Request) -> AsyncGenerator:
 
     # 2. 校验
     if sse_queue is None:
+        logger.warning(f"SSE 队列不存在，无法建立流 task_id={task_id}")
         return
 
     loop = asyncio.get_event_loop()
 
-    # 3. 让当前线程一直从队列中获取数据【如果队列一旦有数据，就直接获取，如果队列没有数据，等一会，在问一下】
+    # 3. 让当前协程一直从队列中获取数据（阻塞队列丢到线程池，避免卡住事件循环）
     try:
         while True:
 
@@ -88,17 +94,22 @@ async def sse_generator(task_id: str, request: Request) -> AsyncGenerator:
             if await request.is_disconnected():
                 return
             try:
-                # 3.2 从队列中获取(阻塞队列---)为了让事件循环不阻塞，
+                # 3.2 从队列中获取(阻塞队列, 超时 1s)
                 msg = await loop.run_in_executor(None, sse_queue.get, True, 1)
-                # 3.3 获取事件类型
-                event_type = msg.get('event')
-                # 3.4 获取事件数据
-                event_data = msg.get('data')
-                # 3.5 打包返回
-                yield _sse_pack(event_type, event_data)  # 打包并且通过yield返回
             except queue.Empty:
-                logging.info(f"队列为空...请稍等")
+                # 队列暂时无数据属正常空闲，静默等待下一轮（不再每秒刷 INFO）
                 continue
+
+            # 3.3 获取事件类型 / 事件数据
+            event_type = msg.get('event')
+            event_data = msg.get('data')
+
+            # 3.4 打包返回
+            yield _sse_pack(event_type, event_data)  # 打包并且通过yield返回
+
+            # 3.5 FINAL 是最后一条事件，推完即止，不再空转
+            if event_type == SSEEvent.FINAL:
+                return
     except  (ConnectionResetError, BrokenPipeError) as e:
         # 客户端中断 关闭了窗口或者浏览器
         return
