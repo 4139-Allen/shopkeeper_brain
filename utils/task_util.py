@@ -29,14 +29,15 @@ TASK_STATUS_PROCESSING = "processing"  # 任务处理中
 TASK_STATUS_COMPLETED = "completed"  # 任务完成
 TASK_STATUS_FAILED = "failed"  # 任务失败
 
+# key 必须与各节点类的 name 属性一致（追踪时传的是 self.name，不是图中的注册 key）
 _NODE_NAME_TO_CN: dict[str, str] = {
     "upload_file": "上传文件",
-    "entry_node": "检查文件",
+    "entry": "检查文件",
     "pdf_to_md_node": "PDF转Markdown",
-    "md_to_img_node": "Markdown图片处理",
+    "md_img_node": "Markdown图片处理",
     "document_split_node": "文档切分",
     "item_name_recognition_node": "主体名称识别",
-    "embedding_chunk_node": "向量生成",
+    "bge_embedding_chunks_node": "向量生成",
     "import_milvus_node": "导入向量数据库",
     "__end__": "处理完成",
     # --- Query 流程节点（kb/query_process/main_graph.py）---
