@@ -1,5 +1,6 @@
 # ---- 解析临时缓存（流水线生成物，勿提交）----
 tem_cache/
+temp_data/
 
 # ---- 源文档（本地输入的 PDF 语料，勿提交）----
 processor/import_processor/temp_dir/

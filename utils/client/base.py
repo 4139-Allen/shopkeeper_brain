@@ -5,7 +5,9 @@ _get_or_create(): 双重检查锁模板方法
 """
 import os
 import threading
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class BaseClientManager:
 

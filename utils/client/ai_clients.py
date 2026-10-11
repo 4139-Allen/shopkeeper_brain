@@ -15,14 +15,14 @@ class AIClients(BaseClientManager):
     AI 模型类客户端：OpenAI协议(VLM-视觉语言模型)
     """
     _openai_vlm_client: OpenAI | None = None
-    _openai__vlm_lock = threading.Lock()
+    _openai_vlm_lock = threading.Lock()
 
     @classmethod
     def get_openai(cls) -> OpenAI:
-        return cls._get_or_create("_openai_vlm_client", cls._openai__vlm_lock, cls._creat_openai)
+        return cls._get_or_create("_openai_vlm_client", cls._openai_vlm_lock, cls._creat_vlm_openai)
 
     @classmethod
-    def _creat_openai(cls) -> OpenAI:
+    def _creat_vlm_openai(cls) -> OpenAI:
         try:
             api_key = cls._require_env("QWEN_API_KEY")
             base_url = cls._require_env("QWEN_BASE_URL")
