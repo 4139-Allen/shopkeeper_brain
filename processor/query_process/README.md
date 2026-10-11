@@ -269,7 +269,6 @@ print(final_state.get("answer"))
 ## 8. 已知问题与注意事项
 
 1. **`update_message_item_names` 仍是 TODO 空实现**（`utils/mongo_history_util.py`），商品名确认后的历史回填实际不生效。
-2. **回填 id 提取有括号 bug**（`item_name_confirm.py`）：`str(msg["_id"] for ...)` 把 generator 整个转成了字符串，应为 `[str(msg["_id"]) for ...]`。
 3. **注册 key 与类 `name` 不一致**：`search_embedding_hyde` vs `HyDeSearchNode.name="hyde_search_node"`，stream 调试日志会混淆。
 4. **MCP URL 必须完整**：`MCP_DASHSCOPE_BASE_URL` 缺失/只填 base 会报 `Unexpected content type`（空）或 `Not Found`(404)，需填百炼控制台给出的 `/mcp` 全路径。
 5. **商品名写法对齐**：导入时入库的 `item_name` 若带品类后缀（如"××计算机"），而 LLM 从用户问题提取的是短名（"××L420x"），同名精确匹配会失败、落入 options 要用户澄清——导入提示词应避免品类后缀。
