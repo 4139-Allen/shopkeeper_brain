@@ -2,8 +2,8 @@ import logging, os, uuid, shutil
 from datetime import datetime
 
 from knowledge.core.paths import get_local_base_dir
-from knowledge.processor.import_processor.exceptions import FileProcessingError
-from knowledge.processor.import_processor.main_graph import kb_import_graph_app
+from knowledge.processor.import_process.exceptions import FileProcessingError
+from knowledge.processor.import_process.main_graph import kb_import_graph_app
 from knowledge.utils.client.storage_clients import StorageClients
 from knowledge.utils.task_util import add_running_task, add_done_task, update_task_status
 

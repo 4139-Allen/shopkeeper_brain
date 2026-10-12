@@ -2,9 +2,9 @@ from langchain_core.messages import SystemMessage, HumanMessage
 import json
 import os
 from pymilvus import DataType
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.exceptions import StateFieldError, ValidationError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.exceptions import StateFieldError, ValidationError
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.prompt.import_process_prompt import ITEM_NAME_USER_PROMPT_TEMPLATE, ITEM_NAME_SYSTEM_PROMPT
 from knowledge.utils.client.ai_clients import AIClients
 from knowledge.utils.client.storage_clients import StorageClients
@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
     node1 = ItemNameRecognitionNode()
 
-    chunks_file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\tem_doc\chunks.json"
+    chunks_file_path = r"/knowledge/processor/import_process\temp_dir\万用表RS-12的使用\tem_doc\chunks.json"
     with open(chunks_file_path, "r", encoding="utf-8")as f1:
         chunks1 = json.load(f1)
 

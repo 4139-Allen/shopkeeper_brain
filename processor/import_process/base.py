@@ -6,9 +6,9 @@
 from abc import ABC, abstractmethod
 import logging
 import time
-from knowledge.processor.import_processor.config import ImportConfig, get_config
-from knowledge.processor.import_processor.exceptions import ImportProcessError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.config import ImportConfig, get_config
+from knowledge.processor.import_process.exceptions import ImportProcessError
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.task_util import add_running_task, add_done_task, add_node_duration
 
 

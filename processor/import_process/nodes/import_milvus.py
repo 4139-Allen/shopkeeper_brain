@@ -10,9 +10,9 @@ import logging
 
 from pymilvus.milvus_client import IndexParams
 
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.exceptions import ValidationError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.exceptions import ValidationError
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.client.storage_clients import StorageClients
 
 logger = logging.getLogger(__name__)
@@ -259,7 +259,8 @@ if __name__ == "__main__":
     import json
     setup_logging()
 
-    temp_dir = Path(r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc")
+    temp_dir = Path(
+        r"/knowledge/processor/import_process\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc")
 
     input_path = temp_dir / "chunks_vector.json"
     output_path = temp_dir / "chunks_vector_ids.json"

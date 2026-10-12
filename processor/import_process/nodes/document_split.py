@@ -3,8 +3,8 @@ import os
 import json
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.markdown_util import MarkdownTableLinearizer
 
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     node = DocumentSplitNode()
 
-    file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\auto\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn).md"
+    file_path = r"/knowledge/processor/import_process\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\auto\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn).md"
 
     with open(file_path, "r", encoding="utf-8")as f:
         md_content_1 = f.read()

@@ -11,9 +11,9 @@ from collections import deque
 from pathlib import Path
 from openai import OpenAI
 
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.exceptions import StateFieldError, FileProcessingError, ImageProcessingError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.exceptions import StateFieldError, FileProcessingError, ImageProcessingError
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.client.ai_clients import AIClients
 from knowledge.utils.client.storage_clients import StorageClients
 

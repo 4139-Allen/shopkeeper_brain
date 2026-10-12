@@ -7,15 +7,15 @@ import json
 from langgraph.constants import START, END
 from langgraph.graph.state import CompiledStateGraph, StateGraph
 
-from knowledge.processor.import_processor.base import setup_logging
-from knowledge.processor.import_processor.nodes.bge_embedding import BgeEmbeddingChunksNode
-from knowledge.processor.import_processor.nodes.document_split import DocumentSplitNode
-from knowledge.processor.import_processor.nodes.entry import EntryNood
-from knowledge.processor.import_processor.nodes.md_img import MarkDownImageNode
-from knowledge.processor.import_processor.nodes.import_milvus import ImportMilvusNode
-from knowledge.processor.import_processor.nodes.item_name_recognition import ItemNameRecognitionNode
-from knowledge.processor.import_processor.nodes.pdf_to_md import PdfToMdNode
-from knowledge.processor.import_processor.state import ImportGraphState, create_default_state
+from knowledge.processor.import_process.base import setup_logging
+from knowledge.processor.import_process.nodes.bge_embedding import BgeEmbeddingChunksNode
+from knowledge.processor.import_process.nodes.document_split import DocumentSplitNode
+from knowledge.processor.import_process.nodes.entry import EntryNood
+from knowledge.processor.import_process.nodes.md_img import MarkDownImageNode
+from knowledge.processor.import_process.nodes.import_milvus import ImportMilvusNode
+from knowledge.processor.import_process.nodes.item_name_recognition import ItemNameRecognitionNode
+from knowledge.processor.import_process.nodes.pdf_to_md import PdfToMdNode
+from knowledge.processor.import_process.state import ImportGraphState, create_default_state
 
 
 
@@ -167,8 +167,8 @@ if __name__ == "__main__":
 
     setup_logging()
 
-    import_file_path1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L540 用户指南-(KLVV,UOS&KOS_01,zh-cn).pdf"
-    file_dir1 = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
+    import_file_path1 = r"/knowledge/processor/import_process\temp_dir\华为擎云 L540 用户指南-(KLVV,UOS&KOS_01,zh-cn).pdf"
+    file_dir1 = r"/knowledge/processor/import_process\temp_dir"
 
     final_state1 = run_import_graph(import_file_path1,file_dir1)
 

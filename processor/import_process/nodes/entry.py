@@ -3,9 +3,9 @@
 """
 from pathlib import Path
 import json
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.exceptions import ValidationError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.exceptions import ValidationError
+from knowledge.processor.import_process.state import ImportGraphState
 
 
 class EntryNood(BaseNode):

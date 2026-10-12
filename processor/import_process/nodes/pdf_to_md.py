@@ -7,9 +7,9 @@ import subprocess
 import time
 from pathlib import Path
 
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.exceptions import PdfConversionError, ValidationError, FileProcessingError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.exceptions import PdfConversionError, ValidationError, FileProcessingError
+from knowledge.processor.import_process.state import ImportGraphState
 
 
 class PdfToMdNode(BaseNode):

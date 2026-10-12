@@ -3,7 +3,7 @@ tem_cache/
 temp_data/
 
 # ---- 源文档（本地输入的 PDF 语料，勿提交）----
-processor/import_processor/temp_dir/
+processor/import_process/temp_dir/
 
 # ---- Python ----
 __pycache__/

@@ -19,6 +19,7 @@ from knowledge.utils.mongo_history_util import get_recent_messages, update_messa
 
 class ItemNameExtractor:
     """
+    查询改写（错别字，语义不清晰等问题，llm来进行改写）
     商品名称提取器（解决用户提出的模糊问题，llm返回处理后的用户问题，增强检索的准确率）
     基于用户的原始问题和历史对话提取用户真正想问的商品名称
     """

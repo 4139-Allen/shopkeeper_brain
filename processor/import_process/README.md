@@ -258,7 +258,7 @@ chunks2_item_name.json                  # item_name_recognition 备份
 ## 7. 运行方式
 
 ```python
-from knowledge.processor.import_processor.main_graph import run_import_graph
+from knowledge.processor.import_process.main_graph import run_import_graph
 
 final_state = run_import_graph(
     import_file_path=r"...temp_dir\万用表RS-12的使用.pdf",

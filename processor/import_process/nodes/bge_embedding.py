@@ -1,9 +1,9 @@
 import json
 import os
 
-from knowledge.processor.import_processor.base import BaseNode, setup_logging
-from knowledge.processor.import_processor.exceptions import ValidationError
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import BaseNode, setup_logging
+from knowledge.processor.import_process.exceptions import ValidationError
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.client.ai_clients import AIClients
 
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     node1 = BgeEmbeddingChunksNode()
 
-    chunks_file_path = r"D:\Python\Project\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc\chunks2_item_name.json"
+    chunks_file_path = r"/knowledge/processor/import_process\temp_dir\华为擎云 L420x 用户指南-(华为擎云 L420x-Axxx,UOS&KOS_01,zh-cn)\tem_doc\chunks2_item_name.json"
 
     with open(chunks_file_path, "r", encoding="utf-8") as f:
         chunks1 = json.load(f)
