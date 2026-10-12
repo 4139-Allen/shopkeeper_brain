@@ -1,27 +1,111 @@
+%% shopkeeper_brain / knowledge —— 分层架构与依赖关系
+%% 箭头方向 = 依赖方向（A --> B 表示 A 导入/调用 B）
+%% 分层：前端 → API → 契约 / 服务 → 基础设施 → 流程编排 → 提示词 / 工具 / 客户端 → 外部中间件
 graph TB
-    subgraph 未实现层
-        A[api 接口层<br/>HTTP/SSE 入口] --> B[services 服务层]
-        B --> C[schema 请求响应模型]
+
+    %% 前端层 front/（原生 HTML，非构建工程）
+    subgraph 前端层
+        FE1["import.html<br/>上传页 + 进度轮询"]
+        FE2["chat.html<br/>对话页 + SSE 流式渲染"]
     end
-    subgraph 已实现层
-        D["processor 流程编排层<br/>LangGraph 双链路"]
-        E[prompt 提示词层]
-        F[utils 基础设施层]
+
+    %% API 层 api/（FastAPI 路由，两服务独立部署）
+    subgraph API层
+        A1["import_api.py :8000<br/>/upload · /status/:task_id"]
+        A2["query_api.py :8001<br/>/query · /stream/:task_id · /history"]
     end
-    subgraph 外部中间件
-        G[(Milvus<br/>chunks + item_name)]
-        H[(MongoDB<br/>chat_message)]
-        I[(MinIO<br/>图片)]
-        J[百炼 LLM/VLM<br/>WebSearch MCP]
-        K[BGE-M3 嵌入/重排]
-        L[MinerU PDF解析]
+
+    %% 契约层 schema/（pydantic 请求/响应模型，内外边界）
+    subgraph 契约层
+        S1["upload_schema<br/>UploadResponse"]
+        S2["task_schema<br/>TaskStatusResponse"]
+        S3["query_schema<br/>QueryRequest / QueryResponse<br/>StreamSubmitResponse"]
     end
-    C --> D
-    D --> E
-    D --> F
-    F --> G
-    F --> H
-    F --> I
-    F --> J
-    F --> K
-    D --> L
+
+    %% 服务层 services/（API 与 LangGraph 之间的桥接）
+    subgraph 服务层
+        SV1["import_file_service<br/>存本地 + 传 MinIO + 跑导入图"]
+        SV2["query_service<br/>跑查询图 + 历史读写 + 取答案"]
+    end
+
+    %% 基础设施 core/（依赖注入与路径常量）
+    subgraph 基础设施
+        C1["depend.py<br/>依赖注入单例（@cache）"]
+        C2["paths.py<br/>包根 / 临时目录 / 前端目录"]
+    end
+
+    %% 流程编排层 processor/（LangGraph 双链路）
+    subgraph 编排层
+        P1["import_processor/main_graph.py<br/>entry → pdf_to_md → md_img → document_split<br/>→ item_name_recognition → bge_embedding → import_milvus"]
+        P2["query_process/main_graph.py<br/>item_name_confirm → 并行三路: vector_search / search_embedding_hyde / web_search_mcp<br/>→ rrf → rerank → answer_output"]
+    end
+
+    %% 提示词层 prompt/ + 工具层 utils/（含客户端单例工厂）
+    subgraph 工具层
+        PR["prompt/<br/>import_process_prompt · query_prompt"]
+        U1["utils/<br/>task_util · sse_util · embedding_util<br/>milvus_util · mongo_history_util · markdown_util"]
+        U2["utils/client/<br/>BaseClientManager（双重检查锁）<br/>ai_clients · storage_clients"]
+    end
+
+    %% 外部中间件 / 服务
+    subgraph 外部依赖
+        M1[("Milvus<br/>kb_chunks_v1 + kb_item_names_v1")]
+        M2[("MongoDB<br/>kb001.chat_message")]
+        M3[("MinIO<br/>knowledge-base-files")]
+        X1["百炼 DashScope<br/>LLM(qwen) / VLM(qwen-vl)"]
+        X2["百炼 WebSearch MCP<br/>streamable_http"]
+        X3["本地模型（CPU）<br/>BGE-M3 嵌入 + BGE-Reranker-Large 重排"]
+        X4["MinerU 2.1.1<br/>子进程 PDF → Markdown"]
+        X5["HuggingFace 缓存<br/>HF_HOME=D:/ai_models"]
+    end
+
+    %% ---- 前端 → API ----
+    FE1 --> A1
+    FE2 --> A2
+
+    %% ---- API → 契约 / 服务 / 基础设施 / 工具 ----
+    A1 --> S1
+    A1 --> S2
+    A1 --> SV1
+    A1 --> C1
+    A1 --> C2
+    A1 --> U1
+    A2 --> S3
+    A2 --> SV2
+    A2 --> C1
+    A2 --> C2
+    A2 --> U1
+
+    %% ---- 基础设施：depend.py 反向依赖服务层（工厂函数）----
+    C1 --> SV1
+    C1 --> SV2
+
+    %% ---- 服务层 → 编排层 / 路径 / 工具 / 客户端 ----
+    SV1 --> P1
+    SV1 --> C2
+    SV1 --> U1
+    SV1 --> U2
+    SV2 --> P2
+    SV2 --> U1
+
+    %% ---- 编排层 → 提示词 / 工具 / 客户端 ----
+    P1 --> PR
+    P1 --> U1
+    P1 --> U2
+    P2 --> PR
+    P2 --> U1
+    P2 --> U2
+
+    %% ---- 工具层 → 客户端层 ----
+    U1 --> U2
+
+    %% ---- 客户端 / 节点 → 外部中间件 ----
+    P1 -.子进程.-> X4
+    U2 --> M1
+    U2 --> M2
+    U2 --> M3
+    U2 --> X1
+    U2 --> X2
+    U2 --> X3
+    X3 -.本地读取.-> X5
+    X4 -.本地读取.-> X5
