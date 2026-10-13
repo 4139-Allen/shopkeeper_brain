@@ -16,7 +16,7 @@ import_file_service 用 update_task_status 驱动全局状态流转(processing �
 from collections import defaultdict
 
 # 只要访问不存在的 key，自动帮你初始化为 []
-_tasks_running_list: dict[str, list[str]] = defaultdict(list)
+_tasks_running_list: dict[str, list[str]] = defaultdict(list)   #调用 defaultdict 这个"类",传参 list → 造出一个真正的空字典实例
 _tasks_done_list: dict[str, list[str]] = defaultdict(list)
 _tasks_duration: dict[str, dict[str, float]] = defaultdict(dict)
 
@@ -53,12 +53,12 @@ _NODE_NAME_TO_CN: dict[str, str] = {
 
 def _to_cn(node_name: str) -> str:
     # 1. 从节点映射字典中获取中文名，若未配置则直接返回原英文名
-    return _NODE_NAME_TO_CN.get(node_name, node_name)
+    return _NODE_NAME_TO_CN.get(node_name, node_name)   # 没取到就原英文名
 
 
 def add_running_task(task_id: str, node_name: str) -> None:
     # 1. 获取当前任务的运行节点列表（利用 defaultdict 自动初始化特性）
-    running = _tasks_running_list[task_id]
+    running = _tasks_running_list[task_id]      # 没有值触发 → 自动建 [], 字典变 {"task_id": []}
 
     # 2. 将当前节点加入运行列表（并做去重判断，防止重复添加）
     if node_name not in running:
@@ -80,7 +80,7 @@ def add_done_task(task_id: str, node_name: str) -> None:
 
 def get_running_task_list(task_id: str) -> list[str]:
     # 1. 获取指定任务运行中的节点列表，并通过列表推导式统一转换为中文展示名返回
-    return [_to_cn(n) for n in _tasks_running_list.get(task_id, [])]
+    return [_to_cn(n) for n in _tasks_running_list.get(task_id, [])]    # 没有值，不触发 → 返回默认 [], 字典里没有 "b"
 
 
 def get_done_task_list(task_id: str) -> list[str]:
@@ -95,7 +95,7 @@ def get_task_status(task_id: str) -> str:
     :return:
     """
     # 1. 安全获取指定任务的总体运行状态，若不存在则返回空字符串
-    return _tasks_status.get(task_id, "")
+    return _tasks_status.get(task_id, "")   # 有值拿到的是 节点列表
 
 
 def update_task_status(task_id: str, status_name: str) -> None:

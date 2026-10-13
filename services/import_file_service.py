@@ -1,11 +1,14 @@
 import logging, os, uuid, shutil
 from datetime import datetime
 
+from fastapi import UploadFile
+
 from knowledge.core.paths import get_local_base_dir
 from knowledge.processor.import_process.exceptions import FileProcessingError
-from knowledge.processor.import_process.main_graph import kb_import_graph_app
+from knowledge.processor.import_process.main_graph import import_graph_app
 from knowledge.utils.client.storage_clients import StorageClients
-from knowledge.utils.task_util import add_running_task, add_done_task, update_task_status
+from knowledge.utils.task_util import add_running_task, add_done_task, update_task_status, TASK_STATUS_PROCESSING, \
+    TASK_STATUS_COMPLETED, TASK_STATUS_FAILED
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,14 @@ class ImportFileService:
         """
         return os.path.join(get_local_base_dir(), datetime.now().strftime("%Y%m%d"))
 
-    def process_upload_file(self, file) -> tuple[str, str, str]:
+    def process_upload_file(self, file: UploadFile) -> tuple[str, str, str]:
+        #前端传进来的对象 UploadFile 对象大概长什么样
+        # ├── .filename      原始文件名,如 "万用表RS-12的使用.pdf"
+        # ├── .content_type  MIME 类型,如 "application/pdf"
+        # ├── .headers       请求头
+        # ├── .file          底层 SpooledTemporaryFile(可读字节流,超阈值才落磁盘临时文件)
+        # ├── .read(size)    读内容
+        # └── .close()       关闭
         """
             处理上传文件：
                 1.生成task_id,构建归档目录
@@ -37,8 +47,8 @@ class ImportFileService:
         :return: Tuple[str,str,str]
         """
         # 1.生成task_id，构建归档目录
-        date_dir = self._get_data_dir()
         task_id = str(uuid.uuid4().hex[:8])     #生成一段 8 位随机十六进制字符串，用作简易唯一 ID
+        date_dir = self._get_data_dir()
         file_dir = os.path.join(date_dir, task_id)
 
         # 2.标记upload_file节点为运行中
@@ -48,7 +58,7 @@ class ImportFileService:
         import_file_path = self._save_upload_file_to_local(file, file_dir)
 
         # 4.同步上传到minio
-        self._save_pload_file_to_minio(import_file_path, file.filename)
+        self._save_upload_file_to_minio(import_file_path, file.filename)
 
         # 5.标记upload_file节点完成
         add_done_task(task_id, "upload_file")
@@ -57,7 +67,7 @@ class ImportFileService:
         return task_id, file_dir, import_file_path
     
     @staticmethod
-    def _save_upload_file_to_local(file, file_dir):
+    def _save_upload_file_to_local(file: UploadFile, file_dir: str):
         """保存上传文件到本地目录"""
         # 1.创建文件保存目录
         # 递归创建多级文件夹（父目录不存在也会一起建）
@@ -80,7 +90,7 @@ class ImportFileService:
         return import_file_dir
 
     @staticmethod
-    def _save_pload_file_to_minio(import_file_path, filename):
+    def _save_upload_file_to_minio(import_file_path, filename):
         """上传文件到minio客户端"""
         # 1.获取minio客户端
         try:
@@ -103,19 +113,19 @@ class ImportFileService:
     def run_import_graph(task_id: str, file_dir: str, import_file_path: str):
         """运行导入  LangGraph 流水线（后台异步执行任务）"""
         try:
-            update_task_status(task_id, "processing")
+            update_task_status(task_id, status_name=TASK_STATUS_PROCESSING)
             global_graph_state = {
                 "task_id": task_id,
                 "file_dir": file_dir,
                 "import_file_path": import_file_path
             }
-            for event in kb_import_graph_app.stream(global_graph_state):
+            for event in import_graph_app.stream(global_graph_state):
                 for node_name, state in event.items():
                     print(f"[{task_id}] Completed Node: {node_name}")
 
-            update_task_status(task_id, "completed")
+            update_task_status(task_id, status_name=TASK_STATUS_COMPLETED)
         except Exception as e:
-            update_task_status(task_id, "failed")
+            update_task_status(task_id, status_name=TASK_STATUS_FAILED)
             print(f"任务{task_id}执行失败，原因：{str(e)}")
 
 

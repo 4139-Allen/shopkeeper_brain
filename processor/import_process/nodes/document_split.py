@@ -201,9 +201,9 @@ class DocumentSplitNode(BaseNode):
         # 7.递归切分
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=body_length,  # 每块最大长度
-            chunk_overlap=0,  # 块之间无重叠
+            chunk_overlap=0,         # 块之间无重叠
             separators=["\n\n", "\n", "。", "！", "？", "；", ".", "!", "?", ";", " ", ""],  # 按优先级尝试分隔符（段落→句子→标点→空格）
-            keep_separator=False  # 不保留分隔符
+            keep_separator=False     # 不保留分隔符
         )
         texts = text_splitter.split_text(body)  # 得到列表
         if len(texts) == 1:

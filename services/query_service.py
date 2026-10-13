@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import List, Dict, Any
 
-from knowledge.processor.query_process.main_graph import query_app
+from knowledge.processor.query_process.main_graph import query_graph_app
 from knowledge.utils.mongo_history_util import clear_history, get_recent_messages
 from knowledge.utils.task_util import update_task_status, TASK_STATUS_PROCESSING, TASK_STATUS_COMPLETED, \
     TASK_STATUS_FAILED, get_task_result
@@ -30,7 +30,7 @@ class QueryService:
             }
 
             # 3.执行查询图谱
-            query_app.invoke(default_state)
+            query_graph_app.invoke(default_state)
 
             # 4.成功，记录完成
             update_task_status(task_id, TASK_STATUS_COMPLETED)

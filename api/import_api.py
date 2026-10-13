@@ -62,7 +62,7 @@ def register_router(app):
             backGround_tasks: BackgroundTasks,
             importFileService: ImportFileService = Depends(get_import_file_service),
             file: UploadFile = File(...)
-    ):
+    ) -> UploadResponse:
         """
         Post请求处理  接收上传文件
         async def 异步函数，支持高并发，不阻塞主线程
@@ -75,10 +75,11 @@ def register_router(app):
         # 2. 将耗时的图谱流程放入后台任务，异步处理
         backGround_tasks.add_task(importFileService.run_import_graph, task_id, file_dir, import_file_path)
 
+        return UploadResponse(message="文件上传成功", task_id=task_id)
         # return {
+        #     "message": "文件上传成功"
         #     "task_id": "abc-123"
         # }
-        return UploadResponse(message="文件上传成功", task_id=task_id)
 
     @app.get("/status/{task_id}", response_model=TaskStatusResponse)
     async def get_status(task_id: str):

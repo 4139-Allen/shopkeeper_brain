@@ -174,7 +174,7 @@ class AnswerOutputNode(BaseNode):
                     meta_tags.append(template.format(field_value))
             relevance_score = doc.get("score")
             if relevance_score is not None:
-                meta_tags.append(f"[score={relevance_score}:.4f]")
+                meta_tags.append(f"[score={relevance_score:.4f}]")
             doc_entry = " ".join(meta_tags) + "\n" + content
             if used_chars + len(doc_entry) > char_budget:
                 break

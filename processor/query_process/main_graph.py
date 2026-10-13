@@ -124,7 +124,7 @@ def create_query_graph() -> CompiledStateGraph:
 
 
 # 创建全局图实例
-query_app = create_query_graph()
+query_graph_app = create_query_graph()
 
 
 if __name__ == "__main__":
@@ -138,9 +138,9 @@ if __name__ == "__main__":
 
     setup_logging()
 
-    final_state1 = query_app.invoke(init_state)
+    final_state1 = query_graph_app.invoke(init_state)
     print(json.dumps(final_state1, indent=4, ensure_ascii=False))
-    query_app.get_graph().print_ascii()
+    query_graph_app.get_graph().print_ascii()
 
 
 

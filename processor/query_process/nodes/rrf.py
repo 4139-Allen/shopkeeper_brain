@@ -7,7 +7,7 @@ from knowledge.processor.query_process.state import QueryGraphState
 
 class RrfNode(BaseNode):
     """
-    RRF融合排序节点
+    RRF融合排序节点，初筛，减轻rerank负担
     主要职责：
     上游两路检索结果 embedding_chunks + hyde_embedding_chunks
             ↓

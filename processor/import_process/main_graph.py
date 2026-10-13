@@ -107,7 +107,7 @@ def create_import_graph() -> CompiledStateGraph:
 
 
 # 实例化导入流程图
-kb_import_graph_app = create_import_graph()
+import_graph_app = create_import_graph()
 
 def run_import_graph(import_file_path: str, file_dir: str) -> ImportGraphState | None :
     """
@@ -123,7 +123,7 @@ def run_import_graph(import_file_path: str, file_dir: str) -> ImportGraphState |
     # ** state 是 Python 的解包操作，将字典展开为关键字参数
     init_state = create_default_state(**state)
 
-    final_state = kb_import_graph_app.invoke(init_state)
+    final_state = import_graph_app.invoke(init_state)
     return final_state
 
     # final_state = None
@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
     #打印最终状态(向量等长字段已摘要)及图
     print(json.dumps(_brief_state(final_state1),indent=4,ensure_ascii=False))
-    kb_import_graph_app.get_graph().print_ascii()
+    import_graph_app.get_graph().print_ascii()
 
 
 

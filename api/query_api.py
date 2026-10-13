@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
     # 注册路由
     register_routers(app)
 
+    # 前端静态资源
     front_page_dir = get_front_page_static_dir()
     if front_page_dir and os.path.exists(front_page_dir):
         app.mount("/front", StaticFiles(directory=front_page_dir))
@@ -57,6 +58,8 @@ def register_routers(app: FastAPI):
                     background_task: BackgroundTasks,
                     service: QueryService = Depends(get_query_service)):
         # 1.获取session_id
+        # request 为什么可.session_id,因为pydantic 会把这些类上的字段声明处理成实例属性，
+        # 构造时逐字段校验类型并赋值。所以 request.session_id 就是普通对象属性访问
         session_id = request.session_id or service.generate_session_id()
 
         # 2.获取任务Id
@@ -68,7 +71,7 @@ def register_routers(app: FastAPI):
             create_sse_queue(task_id)
 
             # 3.2 后台运行Graph
-            background_task.add_task(service.run_query_graph, session_id, task_id,request.query, True)
+            background_task.add_task(service.run_query_graph, session_id, task_id, request.query, True)
 
             # 3.3 返回响应
             return StreamSubmitResponse(message="查询流程已启动，请稍候...", task_id=task_id, session_id=session_id)

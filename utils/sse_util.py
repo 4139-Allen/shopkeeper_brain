@@ -26,6 +26,7 @@ def get_sse_queue(task_id: str) -> Optional[queue.Queue]:
 
 def create_sse_queue(task_id: str) -> queue.Queue:
     """创建并注册一个新的 SSE 队列"""
+    # 先进先出队列
     # 获取队列对象（队列 阻塞队列(非阻塞队列)）
 
     q = queue.Queue()
