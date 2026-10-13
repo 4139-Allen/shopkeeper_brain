@@ -62,7 +62,10 @@ class ItemNameExtractor:
             parsed_result = self._clean_parse(llm_content)
 
             # 7.清洗后赋值
-            result['rewritten_query'] = parsed_result.get('rewritten_query', original_query)
+            # 用 or original_query 而非 .get(k, original_query)：
+            # _clean_parse 会把缺失/null 的 rewritten_query 归一成空串，而 key 存在时
+            # dict.get 的默认值不生效，会导致空串一路传到下游被判为"字段缺失"。
+            result['rewritten_query'] = parsed_result.get('rewritten_query') or original_query
             result['item_names'] = parsed_result.get('item_names', [])
         except Exception as e:
             self.logger.error(f"清洗以及解析LLM的输出失败: {str(e)}")

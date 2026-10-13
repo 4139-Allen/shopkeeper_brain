@@ -5,12 +5,13 @@
 
 from abc import ABC, abstractmethod
 import logging
+import time
 from knowledge.processor.query_process.config import QueryConfig, get_config
 from knowledge.processor.query_process.exceptions import QueryProcessError
 from knowledge.processor.query_process.state import QueryGraphState
 from knowledge.utils.sse_util import push_sse_event, SSEEvent
-from knowledge.utils.task_util import add_running_task, add_done_task, get_task_status, get_done_task_list, \
-    get_running_task_list
+from knowledge.utils.task_util import add_running_task, add_done_task, add_node_duration, get_task_status, \
+    get_done_task_list, get_running_task_list
 
 
 # 节点基类定义：ABC 抽象基类
@@ -49,6 +50,7 @@ class BaseNode(ABC):
 
         try:
             self.logger.info(f"--- {self.name} 开始 ---")
+            start_time = time.time()
 
             if task_id:
                 add_running_task(task_id, self.name)  # 当前正准备执行的节点加入
@@ -57,13 +59,16 @@ class BaseNode(ABC):
                     self._push_progress(task_id)
 
             result = self.process(state)
+            duration = time.time() - start_time
+
             if task_id:
                 add_done_task(task_id, self.name)  # 当前正准备执行的节点加入
+                add_node_duration(task_id, self.name, duration)  # 记录节点耗时
                 # 如果是流式
                 if is_stream:
                     self._push_progress(task_id)
 
-            self.logger.info(f"--- {self.name} 完成 ---")
+            self.logger.info(f"--- {self.name} 完成, 耗时 {duration:.2f}s ---")
             return result
         except Exception as e:
             self.logger.error(f"{self.name} 执行失败: {e}")

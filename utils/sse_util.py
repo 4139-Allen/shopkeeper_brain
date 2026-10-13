@@ -1,44 +1,57 @@
+"""
+SSE 流式工具
+
+生产者在工作线程（LangGraph 同步图靠 run_in_executor 跑），消费者在事件循环
+（HTTP 响应生成器）。两者通过 asyncio.Queue 桥接，工作线程侧用
+loop.call_soon_threadsafe 投递，保证线程安全。
+"""
 import asyncio
+import dataclasses
 import json
 import logging
-import queue
-from typing import Dict, Any, Optional, AsyncGenerator
-from fastapi import Request
+from typing import Dict, Any, AsyncGenerator
 
 logger = logging.getLogger(__name__)
 
 
 class SSEEvent:
     PROGRESS = "progress"  # 任务节点进度
-    DELTA = "delta"  # LLM 流式输出增量
-    FINAL = "final"  # 最终完整答案
+    DELTA = "delta"        # LLM 流式输出增量
+    FINAL = "final"        # 最终完整答案（同时是流的终止信号）
 
 
-# 全局 SSE 任务队列存储
-# Key: task_id, Value: queue.Queue
-_task_stream: Dict[str, queue.Queue] = {}
+@dataclasses.dataclass
+class _SSEStream:
+    """一条 SSE 流的桥接对象：记录创建它的 loop，供工作线程安全投递"""
+    loop: asyncio.AbstractEventLoop
+    queue: "asyncio.Queue"
 
 
-def get_sse_queue(task_id: str) -> Optional[queue.Queue]:
-    """获取指定任务的队列"""
-    return _task_stream.get(task_id)
+# Key: task_id, Value: _SSEStream
+# 生命周期 = 一次 HTTP 请求（生产者与消费者同处一个请求），不再是跨请求状态
+_streams: Dict[str, _SSEStream] = {}
 
 
-def create_sse_queue(task_id: str) -> queue.Queue:
-    """创建并注册一个新的 SSE 队列"""
-    # 先进先出队列
-    # 获取队列对象（队列 阻塞队列(非阻塞队列)）
+def create_sse_queue(task_id: str, maxsize: int = 512) -> asyncio.Queue:
+    """
+    创建并注册一条 SSE 流。
 
-    q = queue.Queue()
-    _task_stream[task_id] = q
+    注意：必须在事件循环内调用（loop.call_soon_threadsafe 需要拿到当前 loop），
+    所以要在 async 路由里创建，不能丢到工作线程里建。
+
+    :param task_id: 任务id
+    :param maxsize: 队列上限，满时丢弃并告警（防止生产端无限堆积）
+    :return: 该任务的 asyncio.Queue
+    """
+    loop = asyncio.get_running_loop()
+    q: asyncio.Queue = asyncio.Queue(maxsize=maxsize)
+    _streams[task_id] = _SSEStream(loop, q)
     return q
 
 
-def remove_sse_queue(task_id: str):
-    """移除指定任务的队列
-    不存在 key 默认返回 None
-    """
-    _task_stream.pop(task_id, None)
+def remove_sse_queue(task_id: str) -> None:
+    """移除指定任务的 SSE 流（不存在则忽略）"""
+    _streams.pop(task_id, None)
 
 
 def _sse_pack(event: str, data: Dict[str, Any]) -> str:
@@ -47,76 +60,78 @@ def _sse_pack(event: str, data: Dict[str, Any]) -> str:
     return f"event: {event}\ndata: {payload}\n\n"
 
 
-def push_sse_event(task_id: str, event: str, data: Dict[str, Any]):
+def _safe_put(q: "asyncio.Queue", item: Dict[str, Any]) -> None:
     """
-    通过 task_id 推送事件到 SSE 队列
+    在事件循环线程内投递事件。
+    队满时丢弃并告警——不能让它抛异常，否则会在 loop 里变成未捕获异常。
     """
-    # 1. 获取 SSE 队列
-    stream_queue = get_sse_queue(task_id)
+    try:
+        q.put_nowait(item)
+    except asyncio.QueueFull:
+        logger.warning("SSE 队列已满，丢弃一条事件")
 
-    # 2. 队列不存在（连接已断开/队列已清理）——显式记录，避免事件被静默丢弃
-    if stream_queue is None:
-        logger.warning(f"SSE 队列不存在，事件被丢弃 task_id={task_id} event={event}")
+
+def push_sse_event(task_id: str, event: str, data: Dict[str, Any]) -> None:
+    """
+    通过 task_id 推送事件到 SSE 流。
+
+    调用方在工作线程里（节点代码），所以必须用 call_soon_threadsafe 跨线程投递，
+    不能用 asyncio.Queue 的直接写入。
+    """
+    # 1. 获取 SSE 流
+    stream = _streams.get(task_id)
+
+    # 2. 流不存在（请求已结束/已清理）——显式记录，避免事件被静默丢弃
+    if stream is None:
+        logger.warning(f"SSE 流不存在，事件被丢弃 task_id={task_id} event={event}")
         return
 
-    # 3. 将事件推送到队列
-    stream_queue.put({"event": event, "data": data})
+    # 3. 线程安全投递到事件循环
+    stream.loop.call_soon_threadsafe(_safe_put, stream.queue, {"event": event, "data": data})
 
 
-async def sse_generator(task_id: str, request: Request) -> AsyncGenerator:
+async def sse_generator(task_id: str) -> AsyncGenerator:
     """
     流式输出结果的消费者
-    1. 从sse队列中获取结果
-    2. 封装队列中的数据以及事件类型为sse协议的数据包格式
-    3. 将封装好的数据包yield出去
-    Args:
-        :param task_id:
-        :param request:
+    1. 从 SSE 队列中获取事件（纯事件驱动：挂起等待，无轮询、无超时）
+    2. 封装队列中的数据以及事件类型为 sse 协议的数据包格式
+    3. 将封装好的数据包 yield 出去；收到 FINAL 即终止
 
-    Returns:
-        AsyncGenerator:异步生成器对象
+    客户端断开会由 Starlette 取消本生成器（await queue.get 抛 CancelledError），
+    因此不再需要主动轮询 request.is_disconnected()。
+
+    :param task_id: 任务id
+    :return: AsyncGenerator
     """
-
-    # 1. 根据任务id 获取任务队列对象
-    sse_queue = _task_stream.get(task_id)
+    # 1. 根据任务id 获取流对象
+    stream = _streams.get(task_id)
 
     # 2. 校验
-    if sse_queue is None:
-        logger.warning(f"SSE 队列不存在，无法建立流 task_id={task_id}")
+    if stream is None:
+        logger.warning(f"SSE 流不存在，无法建立流 task_id={task_id}")
         return
 
-    loop = asyncio.get_event_loop()
-
-    # 3. 让当前协程一直从队列中获取数据（阻塞队列丢到线程池，避免卡住事件循环）
+    # 3. 消费队列
     try:
         while True:
+            # 3.1 挂起等待事件（不占线程、不空转）
+            msg = await stream.queue.get()
 
-            # 3.1 判断前端sse连接是否关闭（主动探测）--->FastApI:可以感知到：request
-            if await request.is_disconnected():
-                return
-            try:
-                # 3.2 从队列中获取(阻塞队列, 超时 1s)
-                msg = await loop.run_in_executor(None, sse_queue.get, True, 1)
-            except queue.Empty:
-                # 队列暂时无数据属正常空闲，静默等待下一轮（不再每秒刷 INFO）
-                continue
+            # 3.2 获取事件类型 / 事件数据
+            event_type = msg.get("event")
+            event_data = msg.get("data")
 
-            # 3.3 获取事件类型 / 事件数据
-            event_type = msg.get('event')
-            event_data = msg.get('data')
+            # 3.3 打包并 yield
+            yield _sse_pack(event_type, event_data)
 
-            # 3.4 打包返回
-            yield _sse_pack(event_type, event_data)  # 打包并且通过yield返回
-
-            # 3.5 FINAL 是最后一条事件，推完即止，不再空转
+            # 3.4 FINAL 是最后一条事件，推完即止
             if event_type == SSEEvent.FINAL:
                 return
-    except  (ConnectionResetError, BrokenPipeError) as e:
+    except (ConnectionResetError, BrokenPipeError):
         # 客户端中断 关闭了窗口或者浏览器
         return
-
     except asyncio.CancelledError:
-        # 服务端中断 协程被取消 重新抛出，让外层知道它被成功取消()
+        # 服务端中断 协程被取消 重新抛出，让外层知道它被成功取消
         raise
     finally:
         remove_sse_queue(task_id)

@@ -2,9 +2,7 @@ import asyncio
 import os.path
 
 import uvicorn
-from fastapi import FastAPI, Depends, HTTPException, Request
-from starlette.background import BackgroundTasks
-
+from fastapi import FastAPI, Depends, HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from starlette.responses import StreamingResponse, RedirectResponse
@@ -12,7 +10,7 @@ from starlette.staticfiles import StaticFiles
 
 from knowledge.core.depend import get_query_service
 from knowledge.core.paths import get_front_page_static_dir
-from knowledge.schema.query_schema import QueryRequest, StreamSubmitResponse, QueryResponse
+from knowledge.schema.query_schema import QueryRequest, QueryResponse
 from knowledge.services.query_service import QueryService
 from knowledge.utils.sse_util import create_sse_queue, sse_generator
 
@@ -55,7 +53,6 @@ def register_routers(app: FastAPI):
 
     @app.post("/query")
     async def query(request: QueryRequest,
-                    background_task: BackgroundTasks,
                     service: QueryService = Depends(get_query_service)):
         # 1.获取session_id
         # request 为什么可.session_id,因为pydantic 会把这些类上的字段声明处理成实例属性，
@@ -65,16 +62,23 @@ def register_routers(app: FastAPI):
         # 2.获取任务Id
         task_id = service.generate_task_id()
 
-        # 3.开启流式
+        # 3.开启流式：提交与订阅合并为一个请求，直接返回 SSE 流
         if request.is_stream:
-            # 3.1 必须在返回响应前创建队列，否则前端请求/stream 时 队列不存在
+            # 3.1 必须在图开跑前建好流（且只能在事件循环里建），否则先推的事件会丢
             create_sse_queue(task_id)
 
-            # 3.2 后台运行Graph
-            background_task.add_task(service.run_query_graph, session_id, task_id, request.query, True)
+            # 3.2 同步图丢线程池，不阻塞事件循环
+            asyncio.get_running_loop().run_in_executor(
+                None, service.run_query_graph, session_id, task_id, request.query, True
+            )
 
-            # 3.3 返回响应
-            return StreamSubmitResponse(message="查询流程已启动，请稍候...", task_id=task_id, session_id=session_id)
+            # 3.3 直接返回流（不再返回 task_id、不再需要客户端二次请求订阅）
+            return StreamingResponse(
+                sse_generator(task_id),
+                media_type="text/event-stream",
+                # 禁用各级缓冲，保证 delta 逐条下发（否则经 nginx 会被整段攒住）
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            )
 
         # 4.非流式
         loop = asyncio.get_running_loop()
@@ -98,13 +102,6 @@ def register_routers(app: FastAPI):
     async def clear_chat_history(session_id: str, service: QueryService = Depends(get_query_service)):
         count = service.clear_history(session_id)
         return {"message": "历史记录清除成功", "deleted_count": count}
-
-    @app.get("/stream/{task_id}")
-    async def stream(task_id: str, request: Request):
-        """SSE实时返回结果"""
-        return StreamingResponse(
-            sse_generator(task_id, request), media_type="text/event-stream"
-        )
 
 
 if __name__ == "__main__":

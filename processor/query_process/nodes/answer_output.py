@@ -1,3 +1,4 @@
+import time
 from typing import List, Dict, Any, Tuple
 
 from knowledge.processor.query_process.base import BaseNode
@@ -25,26 +26,25 @@ class AnswerOutputNode(BaseNode):
         :return: 更新后的state，包含： answer 和 prompt
         """
 
-        task_id = state.get("task_id", "")
-        is_stream = state.get("is_stream")
-
         # 1.已有答案直接返回
         if state.get("answer"):
             self._push_existing_answer(state)
         else:
             # 2.没有答案，构建提示词，调用LLM生成答案
+            t_build = time.time()
             prompt = self._build_prompt(state)
             state['prompt'] = prompt
+            self.logger.info(f"[答案耗时] 构建提示词 {time.time() - t_build:.2f}s, 提示词 {len(prompt)} 字符")
             self._generate_answer(state, prompt)
 
         # 3.写入历史记录
+        t_hist = time.time()
         self._write_history(state)
+        self.logger.info(f"[答案耗时] 写历史 {time.time() - t_hist:.2f}s")
 
-        # 4.流式模式发送结束事件
-        if is_stream:
-            push_sse_event(task_id, SSEEvent.FINAL, {"answer": state.get("answer", "")})
-
-        # 5.返回结果
+        # 4.返回结果
+        # 注意：终止事件（FINAL）不在这里推，改由 run_query_graph 在 finally 里统一推。
+        # 否则图中间一旦抛异常就走不到这一步，前端收不到结束信号、会永久挂起等待。
         return state
 
     # ================================================================== #
@@ -98,19 +98,32 @@ class AnswerOutputNode(BaseNode):
             state["answer"] = self._stream_generate(llm_client, prompt, task_id)
         else:
             state["answer"] = self._invoke_generate(llm_client, prompt)
-            set_task_result(task_id, "answer", state["answer"])
+
+        # 两条路径都落盘，保证 run_query_graph 推终止事件时能取到完整答案
+        set_task_result(task_id, "answer", state["answer"])
 
     def _stream_generate(self, llm_client, prompt, task_id):
         """ 流式输出"""
         accumulate_answer = ""
+        t0 = time.time()
+        first_at = None      # 首字延迟（TTFT）
+        chunks = 0
         try:
             for chunk in llm_client.stream(prompt):
                 delta_text = getattr(chunk, "content", "") or ""
                 if delta_text:
+                    if first_at is None:
+                        first_at = time.time() - t0
+                    chunks += 1
                     accumulate_answer += delta_text
                     push_sse_event(task_id, SSEEvent.DELTA, {"delta": delta_text})
         except Exception as e:
             self.logger.error(f"流式生成答案出错! {e}")
+        total = time.time() - t0
+        self.logger.info(
+            f"[答案耗时] LLM首字 {(first_at or 0):.2f}s | 生成 {total - (first_at or 0):.2f}s | "
+            f"总 {total:.2f}s | chunk数 {chunks} | 答案 {len(accumulate_answer)} 字符"
+        )
         return accumulate_answer
 
     def _invoke_generate(self, llm_client, prompt):

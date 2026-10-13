@@ -1,4 +1,5 @@
 import math
+import time
 from typing import List, Dict, Any
 
 from knowledge.processor.query_process.base import BaseNode, setup_logging
@@ -47,7 +48,7 @@ class RerankNode(BaseNode):
         reranked_docs: List[Dict[str, Any]] = self._rerank_merged_docs(user_query, merged_multi_docs)
 
         # 4.动态Top_k 截取 （断崖检查 + 绝对分数底线过滤）
-        cutoff_docs = self._cliff_catoff(reranked_docs=reranked_docs)
+        cutoff_docs = self._cliff_cutoff(reranked_docs=reranked_docs)
 
         # 5.更新状态返回
         state["reranked_docs"] = cutoff_docs
@@ -117,10 +118,17 @@ class RerankNode(BaseNode):
 
         # 准备问题和文档的句子
         query_doc_content_pairs = [(user_query, doc.get("content")) for doc in merged_multi_docs]
+        print(f"分数文档：{query_doc_content_pairs}")
+
+        # 打印输入体量，区分"文档太长" 还是 "模型/冷加载慢"
+        total_chars = sum(len(c or "") for _, c in query_doc_content_pairs)
+        self.logger.info(f"[重排序耗时] 候选 {len(query_doc_content_pairs)} 篇，文档总长 {total_chars} 字符")
 
         try:
+            t0 = time.time()
             # Reranker模型计算句子得分:   负无穷 - 正无穷
             rerank_scores = rerank_client.compute_score(sentence_pairs=query_doc_content_pairs)
+            self.logger.info(f"[重排序耗时] compute_score {time.time() - t0:.2f}s")
 
             # isinstance(rerank_scores, float) or isinstance(rerank_scores, int)
             # 单文档防护    只有一个文档，返回的可能是float或int值。而不是 list ;   这里如果是一个文档的话，也封装成List。保证后续逻辑处理的类型一致.
@@ -128,24 +136,23 @@ class RerankNode(BaseNode):
                 rerank_scores = [rerank_scores]
             print(rerank_scores)  # [5.06640625, -4.7421875, 3.962890625, -9.4765625]
 
-            # 没做归一化处理
-            score_docs1 = [{**doc, "score": score} for doc, score in zip(merged_multi_docs, rerank_scores)]
-            print(f"没做归一化处理:{score_docs1}")
+            # # 没做归一化处理 （调试用）
+            # score_docs1 = [{**doc, "score": score} for doc, score in zip(merged_multi_docs, rerank_scores)]
+            # print(f"没做归一化处理:{score_docs1}")
 
             # 归一化处理
             score_docs = [{**doc, "score": self._sigmoid(score)} for doc, score in
                           zip(merged_multi_docs, rerank_scores)]
-            print(f"归一化处理:{score_docs}")
 
             sorted_score_docs = sorted(score_docs, key=lambda x: x["score"], reverse=True)
-            print(f"排序后结果返回:{sorted_score_docs}")
+
 
             return sorted_score_docs
         except Exception as e:
             self.logger.error(f"重排序模型计算分数失败:{e}")
             return [{**doc, "score": None} for doc in merged_multi_docs]
 
-    def _cliff_catoff(self, reranked_docs: List[Dict[str, Any]]) -> List[
+    def _cliff_cutoff(self, reranked_docs: List[Dict[str, Any]]) -> List[
         Dict[str, Any]]:
         """断崖检测动态截断
         扫描所有相邻文档分数差，找到最大落差位置进行截断，
@@ -178,6 +185,7 @@ class RerankNode(BaseNode):
             # 分数差值
             gap = current_score - next_score
 
+            # 第一断崖 分数差超过0.15的断崖之后的文档都丢弃（不是最大断崖：最大断崖是丢弃最大的分数差之后的文档）
             if gap >=self.config.rerank_gap_abs and gap > max_gap:  #self.config.rerank_gap_abs=0.15
                 max_gap = gap
                 cut_off = i + 1
@@ -238,7 +246,7 @@ if __name__ == "__main__":
     for j, doc in enumerate(result["reranked_docs"], 1):
         score1 = doc.get('score')
         score_str = f"{score1:.4f}" if score1 is not None else "N/A"
-        print(f"[{j}] score={score_str} | {doc['source']:5} | {doc['content'][:50]}...")
+        print(f"[{j}] score={score_str} | {doc['source']:5} | {doc['content'][:50]}")
 
     print("-" * 60)
     print("测试完成")
